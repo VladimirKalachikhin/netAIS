@@ -1,0 +1,57 @@
+@media (max-height: 255px) {
+	body {
+		font-size:12px;
+	}
+	img.knob {
+		width:16px;
+	}
+}
+@media (min-height: 256px) and (max-height: 356px) {
+	body {
+		font-size:14px;
+	}
+	img.knob {
+		width:24px;
+	}
+}
+@media (min-height: 357px) and (max-height: 576px) { /* SONY Reader PRS-T1 800x562 */
+	body {
+		font-size:16px;
+	}
+	img.knob {
+		width:28px;
+	}
+}
+@media (min-height: 577px) and (max-height: 743px) {
+	body {
+		font-size:20px;
+	}
+	img.knob {
+		width:38px;
+	}
+}
+@media (min-height: 744px) and (max-height: 899px) {
+	body {
+		font-size:25px;
+	}
+	img.knob {
+		width:52px;
+	}
+}
+@media (min-height: 900px) {
+	body {
+		font-size:35px;
+	}
+	img.knob {
+		width:74px;
+	}
+}
+.alarm {
+    animation:blinkingText 1s infinite;
+}
+@keyframes blinkingText{
+    0%{     color: white;    }
+    50%{    color: transparent; }
+    100%{   color: white;    }
+}
+
