@@ -9,9 +9,9 @@ Software use [TOR](torproject.org) as a communication environment, so it works s
 Alpha-version works only with [GaladrielMap](http://galadrielmap.hs-yachten.at/) at now, sorry.
 
 ## Features
-Serving one private group.
-Membership in any number groups.
-English and Russian web-interface.
+* Serving one private group.
+* Membership in any number groups.
+* English and Russian web-interface.
 
 ## Technical
 Any of the software kit has a client and a server for one private group. The server must be configured as a TOR hidden service.  
