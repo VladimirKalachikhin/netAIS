@@ -29,6 +29,9 @@ Also, this file format identical  [gpsdAISd](https://github.com/VladimirKalachik
 ## Compatibility
 Linux. 
 
+## Dependencies
+php-curl
+
 ## Install&configure:
 You must have a web server under Linux with php support and [TOR service](https://2019.www.torproject.org/docs/tor-manual.html.en).
 Copy the project files to a web server directory and adjust paths in _params.php_.  
