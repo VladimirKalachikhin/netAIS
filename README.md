@@ -3,6 +3,7 @@
 ## v. 0.0
 
 Exchange AIS-like messages via the Internet to watch position members of your private group. No need to a dedication server with a real IP address.  
+Suitable for fishing, regatta and collective water recreation.  
 
 ![scheme](screenshots/art.png)   
 Software use [TOR](torproject.org) as a communication environment, so it works smoothly via mobile internet and public wi-fi.  
@@ -31,7 +32,8 @@ Linux.
 ## Install&configure:
 You must have a web server under Linux with php support and [TOR service](https://2019.www.torproject.org/docs/tor-manual.html.en).
 Copy the project files to a web server directory and adjust paths in _params.php_.  
-[Configure TOR hidden service](https://2019.www.torproject.org/docs/tor-onion-service.html.en) to _server/_ directory if you are going to support a corporate group. It's no need if you want to be a group member only.  
+Set _write_ access to `data/` and `server/` directories for web server user (www-data?).
+[Configure TOR hidden service](https://2019.www.torproject.org/docs/tor-onion-service.html.en) to `server/` directory if you are going to support a corporate group. It's no need if you want to be a group member only.  
 
 ### Vehicle info
 The information abou you vehicle stored in _boatInfo.ini_ file. Fill it correctly.
