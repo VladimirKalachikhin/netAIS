@@ -34,6 +34,7 @@ You must have a web server under Linux with php support and [TOR service](https:
 Copy the project files to a web server directory and adjust paths in _params.php_.  
 Set _write_ access to `data/` and `server/` directories for web server user (www-data?).
 [Configure TOR hidden service](https://2019.www.torproject.org/docs/tor-onion-service.html.en) to `server/` directory if you are going to support a corporate group. It's no need if you want to be a group member only.  
+Update _params.php_: place to $onion variable address you TOR hidden service. This address located in `hostname` file, as it described in `torrs`. (for example: `# cat /var/lib/tor/hidden_service_netAIS/hostname`)
 
 ### Vehicle info
 The information abou you vehicle stored in _boatInfo.ini_ file. Fill it correctly.
