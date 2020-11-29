@@ -7,7 +7,7 @@ Suitable for fishing, regatta and collective water recreation.
 
 ![scheme](screenshots/art.png)   
 Software use [TOR](torproject.org) as a communication environment, so it works smoothly via mobile internet and public wi-fi.  
-Alpha-version works only with [GaladrielMap](http://galadrielmap.hs-yachten.at/) at now, sorry.
+Alpha-version works only with [GaladrielMap](http://galadrielmap.hs-yachten.at/) chart plotter at now, sorry.
 
 ## Features
 * Serving one private group.
@@ -54,5 +54,11 @@ Web-interface optimised to mobile and/or e-Inc devices, old ones including.
 
 ## Thanks
 * [Metrize Icons by Alessio Atzeni](https://icon-icons.com/pack/Metrize-Icons/1130) for icons.
+
+## Usage
+netAIS functionality embedded to [GaladrielMap](http://galadrielmap.hs-yachten.at/) chart plotter.
+ ![netAIS](screenshots/s13.png)<br>
+
+
 ## Support
 You can get support for netAIS software for a beer [via PayPal](https://paypal.me/VladimirKalachikhin) or [YandexMoney](https://yasobe.ru/na/galadrielmap) at [galadrielmap@gmail.com](mailto:galadrielmap@gmail.com)  
