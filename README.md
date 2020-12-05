@@ -6,7 +6,7 @@ Exchange AIS-like messages via the Internet to watch position members of your pr
 Suitable for fishing, regatta and collective water recreation.  
 
 ![scheme](screenshots/art.png)   
-Software use [TOR](torproject.org) as a communication environment, so it works smoothly via mobile internet and public wi-fi.  
+Software use [TOR](torproject.org) as a communication environment, so it works smoothly via mobile internet and public wi-fi. Spatial info gets via [gpsd](https://gpsd.io/).  
 Alpha-version works only with [GaladrielMap](http://galadrielmap.hs-yachten.at/) chart plotter at now, sorry.
 
 ## Features
@@ -41,6 +41,10 @@ Update _params.php_: place to $onion variable address you TOR hidden service. Th
 
 ### Vehicle info
 The information abou you vehicle stored in _boatInfo.ini_ file. Fill it correctly.
+
+### Spatial info
+netAIS get your positioning from gpsd instance.
+How to install and configure gpsd see [gpsd pages](https://gpsd.io/). Update _params.php_ to gpsd host and port, if you want.
 
 ## Web-interface
 ![screen](screenshots/s1.png)   
