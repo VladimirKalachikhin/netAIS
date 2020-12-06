@@ -144,9 +144,9 @@ return $vehicle;
 
 function updSelf(&$vehicle) {
 /**/
-global $gpsdHost,$gpsdPort,$selfStatusFileName,$selfStatusTimeOut; 	// from params.php
-if(!$gpsdHost) $gpsdHost = 'localhost';
-if(!$gpsdPort) $gpsdPort = 2947;
+global $netAISgpsdHost,$netAISgpsdPort,$selfStatusFileName,$selfStatusTimeOut; 	// from params.php
+if(!$netAISgpsdHost) $netAISgpsdHost = 'localhost';
+if(!$netAISgpsdPort) $netAISgpsdPort = 2947;
 
 clearstatcache(TRUE,$selfStatusFileName);
 //echo "filemtime=".filemtime($selfStatusFileName)."; selfStatusTimeOut=$selfStatusTimeOut;\n";
@@ -160,7 +160,7 @@ if(!$status) {
 //echo "status: <pre>"; print_r($status);echo "</pre>\n";
 $vehicle['status'] = (int)$status[0]; 	// Navigational status 0 = under way using engine, 1 = at anchor, 2 = not under command, 3 = restricted maneuverability, 4 = constrained by her draught, 5 = moored, 6 = aground, 7 = engaged in fishing, 8 = under way sailing, 9 = reserved for future amendment of navigational status for ships carrying DG, HS, or MP, or IMO hazard or pollutant category C, high speed craft (HSC), 10 = reserved for future amendment of navigational status for ships carrying dangerous goods (DG), harmful substances (HS) or marine pollutants (MP), or IMO hazard or pollutant category A, wing in ground (WIG);11 = power-driven vessel towing astern (regional use), 12 = power-driven vessel pushing ahead or towing alongside (regional use); 13 = reserved for future use, 14 = AIS-SART (active), MOB-AIS, EPIRB-AIS 15 = undefined = default (also used by AIS-SART, MOB-AIS and EPIRB-AIS under test)
 $vehicle['status_text'] = $status[1];
-$TPV = getPosAndInfo($gpsdHost,$gpsdPort); 	// fGPSD.php
+$TPV = getPosAndInfo($netAISgpsdHost,$netAISgpsdPort); 	// fGPSD.php
 //print_r($TPV);
 if(! isset($TPV['error'])) {
 	$vehicle['speed'] = (float)$TPV['velocity']; 	// SOG Speed over ground in m/sec
