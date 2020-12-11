@@ -2,7 +2,7 @@
 $path_parts = pathinfo(__FILE__); // определяем каталог скрипта
 chdir($path_parts['dirname']); // задаем директорию выполнение скрипта
 
-$version = ' v. 0.0';
+$version = ' v. 1.0';
 require('internationalisation.php'); 	// 
 require('params.php'); 	// 
 //echo $_SERVER['PHP_SELF'];
@@ -17,11 +17,13 @@ if(!$status) {
 }
 //echo "status <pre>";print_r($status);echo "</pre><br>\n";
 
+// Сервер
+// Определим наличие tor
 exec("netstat -ano | grep LISTEN | grep $torPort",$psList); 	// exec будет ждать завершения
 //echo "exec return <pre>";print_r($psList);echo "</pre><br>\n";
 $torRun = strpos(implode("\n",$psList),'LISTEN');
 if(!$onion) @unlink('server/netAISserver.php'); 	// в конфиге не указан адрес скрытого сервиса -- сервер не может быть включен
-// Возьмём список серверов
+// Возьмём список серверов: csv адрес,запущен,название, комментарий
 $servers = array();
 if (($handle = @fopen($serversListFileName, "r")) !== FALSE) {
 	while (($server = fgetcsv($handle, 1000, ",")) !== FALSE) {
@@ -36,8 +38,10 @@ if (($handle = @fopen($serversListFileName, "r")) !== FALSE) {
 	fclose($handle);
 	//echo "<pre>"; print_r($servers); echo "</pre>\n";
 }
+// Определим включённость сервера
 clearstatcache(TRUE,'server/netAISserver.php');
 $serverOn = file_exists('server/netAISserver.php');
+
 
 // Обработка запроса 
 $str = "";
@@ -104,7 +108,7 @@ elseif($_REQUEST['startClient']) { 	//
 		}
 	}
 }
-// изменение состояния
+// изменение статуса
 elseif($_REQUEST['vehacleStatus'] or $_REQUEST['vehicleDescription']) { 	// 
 	//echo "vehacleStatus={$_REQUEST['vehacleStatus']}; vehicleDescription={$_REQUEST['vehicleDescription']};<br>\n";
 	$status[0]=$_REQUEST['vehacleStatus']; 	// 
@@ -282,16 +286,30 @@ style='margin:0.5rem 0 0.5rem 0;padding:0.5rem;border:1px solid black;border-rad
 </html>
 
 <?php
+
+
 function runClients() {
 /* для каждого url в $servers организует периодический запуск клиента */
-global $servers,$phpCLIexec;
+global $servers,$phpCLIexec,$netAISdHost,$netAISdPort;
+$oneClientRun = 0;
 foreach($servers as $uri => $server) {
-	if($server[1]) { 	// запустим
+	if($server[1]) { 	// запустим, он проверяет сам, запущен ли
 		exec("$phpCLIexec netAISclient.php -s$uri > /dev/null 2>&1 & echo $!",$psList); 	// exec не будет ждать завершения: & - daemonise; echo $! - return daemon's PID
+		$oneClientRun += 1;
+		// Запустим сервер сообщений AIS для тупых
+		if($netAISdHost) { 	// он проверяет сам, запущен ли
+			exec("$phpCLIexec netAISd.php > /dev/null 2>&1 & echo $!",$psList); 	// exec не будет ждать завершения: & - daemonise; echo $! - return daemon's PID
+		}
 	}
 	else { 	// убъём
 		killClient($uri);
+		$oneClientRun -= 1;
 	}
+}
+//echo "oneClientRun=$oneClientRun;<br>\n";
+if($netAISdHost and ($oneClientRun < 1)) { 	// остановим сервер сообщений AIS для тупых
+	//echo "Шлём ?BYE в $netAISdHost $netAISdPort <br>\n";
+	exec("echo ?BYE | nc $netAISdHost $netAISdPort > /dev/null 2>&1 &");
 }
 } // end function runClients
 
