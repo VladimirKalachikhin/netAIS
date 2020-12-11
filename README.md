@@ -55,7 +55,6 @@ The netAIS data may be received as:
 * local file. This way uses [GaladrielMap](http://galadrielmap.hs-yachten.at/) chart plotter. Full featured.
 * network socket with gpsd:// protocol. Available broadcast imo, vin, custom shiptype and custom status text.
 * network socket with the flow of AIS sentences 18,24 and 27. Suitable for [OpenCPN](https://opencpn.org/), [OruxMaps](https://www.oruxmaps.com/cs/es) and an iron chart plotters. Base features only.  
-netAIS functionality embedded to [GaladrielMap](http://galadrielmap.hs-yachten.at/) chart plotter.
  
 ### Configure OpenCPN
 Create a network connection as described in [OpenCPN manual](https://opencpn.org/wiki/dokuwiki/doku.php?id=opencpn:opencpn_user_manual:options_setting:connections#add_a_network_connection).  
