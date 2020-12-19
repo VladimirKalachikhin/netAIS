@@ -24,6 +24,7 @@ $options = getopt("s:");
 $netAISserverURI = filter_var($options['s'],FILTER_SANITIZE_URL);
 if(!$netAISserverURI) {
 	echo "Option:\n-sGroupServer.onion\n";
+	return;
 }
 
 if(IRun($netAISserverURI)) { 	// Я ли?
@@ -102,6 +103,7 @@ do {
 	
 	sleep($sleepTime);
 } while(1);
+unlink($netAISJSONfileName); 	// если netAIS выключен -- файл с целями должен быть удалён, иначе эти цели будут показываться вечно
 return;
 
 

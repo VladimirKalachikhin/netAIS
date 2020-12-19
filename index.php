@@ -290,7 +290,7 @@ style='margin:0.5rem 0 0.5rem 0;padding:0.5rem;border:1px solid black;border-rad
 
 function runClients() {
 /* для каждого url в $servers организует периодический запуск клиента */
-global $servers,$phpCLIexec,$netAISdHost,$netAISdPort;
+global $servers,$phpCLIexec,$netAISdHost,$netAISdPort,$netAISJSONfileName;
 $oneClientRun = 0;
 foreach($servers as $uri => $server) {
 	if($server[1]) { 	// запустим, он проверяет сам, запущен ли
@@ -303,6 +303,7 @@ foreach($servers as $uri => $server) {
 	}
 	else { 	// убъём
 		killClient($uri);
+		unlink($netAISJSONfileName); 	// если netAIS выключен -- файл с целями должен быть удалён, иначе эти цели будут показываться вечно
 		$oneClientRun -= 1;
 	}
 }
