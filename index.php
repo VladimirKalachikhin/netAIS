@@ -2,7 +2,7 @@
 $path_parts = pathinfo(__FILE__); // определяем каталог скрипта
 chdir($path_parts['dirname']); // задаем директорию выполнение скрипта
 
-$version = ' v. 1.0';
+$version = ' v. 1.1';
 require('internationalisation.php'); 	// 
 require('params.php'); 	// 
 //echo $_SERVER['PHP_SELF'];
@@ -43,8 +43,8 @@ clearstatcache(TRUE,'server/netAISserver.php');
 $serverOn = file_exists('server/netAISserver.php');
 
 
+$str = ""; 	// переменная часть сообщения в каждой секции
 // Обработка запроса 
-$str = "";
 // вкл/выкл сервера
 if($_REQUEST['stopServer']) { 	
 	@unlink('server/netAISserver.php'); 	// 
@@ -63,7 +63,7 @@ elseif($_REQUEST['startServer']) {
 		$servers[$onion][1] = 1; 	// укажем, что клиент к своему серверу должен быть запущен
 		$serverOn = TRUE;
 	}
-	else  $str = $serverErrTXT;
+	else  $str = $serverErrTXT; 	// СБОЙ - не запущена служба tor или не сконфигурирован сервис onion.
 	//echo "Server started<br>\n";
 }
 // редактор списка серверов
@@ -101,7 +101,7 @@ elseif($_REQUEST['startClient']) { 	//
 				$serverOn = TRUE;
 			}
 			else  {
-				$str = $serverErrTXT;
+				$str = $serverErrTXT; 	//  СБОЙ - не запущена служба tor или не сконфигурирован сервис onion.
 				$servers[$onion][1] = 0; 	// 
 			}
 			//echo "Server started<br>\n";
@@ -130,7 +130,10 @@ runClients(); 	// запустим\проверим клиентов для ка
 if($serverOn) {
 	$img = "src='img/serverRun.svg' alt='STOP'";
 	$name = 'stopServer';
-	if(!$str) $str = $serverOnTXT1.$onion.$serverOnTXT2;
+	if($torRun) { 	// команд не было, просто релоад, и обнаружилось, что tor умер
+		if(!$str) $str = $serverOnTXT1.$onion.$serverOnTXT2;
+	}
+	else $str = $serverErrTXT1; 	// СБОЙ - не запущена служба tor
 }
 else { 
 	$img = "src='img/off.svg' alt='START'";
@@ -184,7 +187,7 @@ style='width:100%;height:53vh;margin:0.5rem 0 0.5rem 0;border:1px solid black;bo
 <div style='height:65%;overflow:auto;padding:0.5rem;'>
 <?php
 //echo "torRun=$torRun;<br>";
-if(!$torRun) echo "СБОЙ: не запущена служба tor";
+if(!$torRun) echo $serverErrTXT1; 	// СБОЙ - не запущена служба tor
 else {
 	foreach($servers as $url => $server) {
 		if(is_int($url)) continue; 	// строки - комментарии
@@ -303,7 +306,7 @@ foreach($servers as $uri => $server) {
 	}
 	else { 	// убъём
 		killClient($uri);
-		unlink($netAISJSONfileName); 	// если netAIS выключен -- файл с целями должен быть удалён, иначе эти цели будут показываться вечно
+		@unlink($netAISJSONfileName); 	// если netAIS выключен -- файл с целями должен быть удалён, иначе эти цели будут показываться вечно
 		$oneClientRun -= 1;
 	}
 }

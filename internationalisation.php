@@ -8,7 +8,8 @@ if(strpos($_SERVER['HTTP_ACCEPT_LANGUAGE'],'ru')===FALSE) { 	// клиент - �
 	$serverOffTXT = ' closed';
 	$serverOnTXT1 = " open, address: <input type='text' value='";
 	$serverOnTXT2 = "' size='17' style='font-size:110%;'>";
-	$serverErrTXT = ' ERR - tor service not found or onion resource not configure.';
+	$serverErrTXT = ' ERR - TOR service not found or onion resource not configure.';
+	$serverErrTXT1 = ' ERR - TOR service not found';
 	
 	$serverPlaceholderTXT = 'Required! .onion address';
 	$serverNamePlaceholderTXT = 'Clear name';
@@ -39,6 +40,7 @@ else {
 	$serverOnTXT1 = " работает, адрес: <input type='text' value='";
 	$serverOnTXT2 = "' size='17' style='font-size:110%;'>";
 	$serverErrTXT = ' СБОЙ - не запущена служба tor или не сконфигурирован сервис onion.';
+	$serverErrTXT1 = ' СБОЙ - не запущена служба tor';
 	
 	$serverPlaceholderTXT = 'Нужно! .onion адрес';
 	$serverNamePlaceholderTXT = 'Понятное наименование';
