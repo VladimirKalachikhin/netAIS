@@ -19,7 +19,7 @@ if(!$status) {
 
 // Сервер
 // Определим наличие tor
-exec("netstat -ano | grep LISTEN | grep $torPort",$psList); 	// exec будет ждать завершения
+exec("netstat -an | grep LISTEN | grep $torPort",$psList); 	// exec будет ждать завершения
 //echo "exec return <pre>";print_r($psList);echo "</pre><br>\n";
 $torRun = strpos(implode("\n",$psList),'LISTEN');
 if(!$onion) @unlink('server/netAISserver.php'); 	// в конфиге не указан адрес скрытого сервиса -- сервер не может быть включен
@@ -57,11 +57,20 @@ elseif($_REQUEST['startServer']) {
 	@unlink('server/netAISserver.php'); 	// 
 	$serverOn = FALSE;
 	if($torRun and $onion) {
-		exec('ln -sr netAISserver.php server/netAISserver.php'); 	// symlink() не умеет относительные ссылки, и нужен полный путь
+		//exec('ln -sr netAISserver.php server/netAISserver.php'); 	// symlink() не умеет относительные ссылки, и нужен полный путь
+		// но, однако, busybox не умеет ln -sr, поэтому создаём относительную ссылку через жопу:
+		chdir('server');
+		symlink('../netAISserver.php','netAISserver.php');
+		chdir('..');
 		//echo readlink('server/netAISserver.php');
-		if(!$servers[$onion]) $servers[$onion] = array($onion,0,$onion,$myGroupNameTXT);
-		$servers[$onion][1] = 1; 	// укажем, что клиент к своему серверу должен быть запущен
-		$serverOn = TRUE;
+		// Определим включённость сервера
+		clearstatcache(TRUE,'server/netAISserver.php');
+		$serverOn = file_exists('server/netAISserver.php');
+		if($serverOn) {
+			if(!$servers[$onion]) $servers[$onion] = array($onion,0,$onion,$myGroupNameTXT);
+			$servers[$onion][1] = 1; 	// укажем, что клиент к своему серверу должен быть запущен
+		}
+		else $str = $serverErrTXT2;
 	}
 	else  $str = $serverErrTXT; 	// СБОЙ - не запущена служба tor или не сконфигурирован сервис onion.
 	//echo "Server started<br>\n";
@@ -96,9 +105,17 @@ elseif($_REQUEST['startClient']) { 	//
 	if($_REQUEST['server'] == $onion) { 	// указан клиент к своему серверу
 		if(!$serverOn) { 	// сервер сейчас не запущен
 			if($torRun and $onion) {
-				exec('ln -sr netAISserver.php server/netAISserver.php'); 	// symlink() не умеет относительные ссылки, и нужен полный путь
+				//exec('ln -sr netAISserver.php server/netAISserver.php'); 	// symlink() не умеет относительные ссылки, и нужен полный путь
 				//echo readlink('server/netAISserver.php');
-				$serverOn = TRUE;
+				// но, однако, busybox не умеет ln -sr, поэтому создаём относительную ссылку через жопу:
+				chdir('server');
+				symlink('../netAISserver.php','netAISserver.php');
+				chdir('..');
+				//echo readlink('server/netAISserver.php');
+				// Определим включённость сервера
+				clearstatcache(TRUE,'server/netAISserver.php');
+				$serverOn = file_exists('server/netAISserver.php');
+				if(!$serverOn) $str = $serverErrTXT2;
 			}
 			else  {
 				$str = $serverErrTXT; 	//  СБОЙ - не запущена служба tor или не сконфигурирован сервис onion.

@@ -7,9 +7,10 @@ if(strpos($_SERVER['HTTP_ACCEPT_LANGUAGE'],'ru')===FALSE) { 	// клиент - �
 	$serverTXT = 'You netAIS group:';
 	$serverOffTXT = ' closed';
 	$serverOnTXT1 = " open, address: <input type='text' value='";
-	$serverOnTXT2 = "' size='17' style='font-size:110%;'>";
+	$serverOnTXT2 = "' size='34' style='font-size:110%;'>";
 	$serverErrTXT = ' ERR - TOR service not found or onion resource not configure.';
 	$serverErrTXT1 = ' ERR - TOR service not found';
+	$serverErrTXT2 = ' ERR - unknown. Rights?';
 	
 	$serverPlaceholderTXT = 'Required! .onion address';
 	$serverNamePlaceholderTXT = 'Clear name';
@@ -38,9 +39,10 @@ else {
 	$serverTXT = 'Своя группа netAIS:';
 	$serverOffTXT = ' не запущена';
 	$serverOnTXT1 = " работает, адрес: <input type='text' value='";
-	$serverOnTXT2 = "' size='17' style='font-size:110%;'>";
+	$serverOnTXT2 = "' size='34' style='font-size:110%;'>";
 	$serverErrTXT = ' СБОЙ - не запущена служба tor или не сконфигурирован сервис onion.';
 	$serverErrTXT1 = ' СБОЙ - не запущена служба tor';
+	$serverErrTXT2 = ' СБОЙ - неизвестная причина. Права?';
 	
 	$serverPlaceholderTXT = 'Нужно! .onion адрес';
 	$serverNamePlaceholderTXT = 'Понятное наименование';
