@@ -335,9 +335,9 @@ if($netAISdHost and ($oneClientRun < 1)) { 	// остановим сервер �
 } // end function runClients
 
 function killClient($uri) {
+global $phpCLIexec; 	// from params.php
 exec("ps -A w | grep '$uri'",$psList);
 if(!$psList) exec("ps w | grep '$uri'",$psList); 	// for OpenWRT. For others -- let's hope so all run from one user
-//exec("ps w | grep '$uri'",$psList); 	// for OpenWRT. For others -- let's hope so all run from one user
 //echo "res=$res ps w | grep '$uri':<pre>"; print_r($psList); echo "</pre><br>\n";
 foreach($psList as $str) {
 	$str = explode(' ',trim($str)); 	// массив слов
@@ -355,7 +355,6 @@ foreach($psList as $str) {
 			break 3;
 		}
 	}
-	
 }
 } // end function killClient
 ?>
