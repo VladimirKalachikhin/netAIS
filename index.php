@@ -2,7 +2,7 @@
 $path_parts = pathinfo(__FILE__); // определяем каталог скрипта
 chdir($path_parts['dirname']); // задаем директорию выполнение скрипта
 
-$version = ' v. 1.1';
+$version = ' v.1.2';
 require('internationalisation.php'); 	// 
 require('params.php'); 	// 
 //echo $_SERVER['PHP_SELF'];
@@ -188,14 +188,16 @@ infoBox.innerText='width: '+window.innerWidth+' height: '+window.innerHeight;
 style='padding:0.1rem;border:1px solid black;border-radius:5px;'
 action='<?php echo $_SERVER['PHP_SELF'];?>'
 >
-	<table><tr>
+	<table>
+	<tr>
 	<td style='width:100%;'><?php echo "$serverTXT $str";?></td>
 	<td style='width:4rem;'>
 		<button type=submit name="<?php echo $name ?>" value='1' style='margin:0rem;padding:0;'>
 			<img <?php echo $img ?>  class='knob'>
 		</button>
 	</td>
-	</tr></table>
+	</tr>
+	</table>
 </form>
 
 <div id='client'
@@ -224,11 +226,11 @@ else {
 			<?php } ?>
 		</td>
 		<td>
-			<input type='text' name='serverName' size='17' value='<?php echo $server[2]; ?>' disabled style='font-size:90%;'>
+			<input type='text' name='serverName' size='17' value='<?php echo htmlentities($server[2],ENT_QUOTES); ?>' disabled style='font-size:90%;'>
 		</td>
 		<td style='width:100%'>
 			<textarea name='serverDescription' rows=2 disabled style='width:100%;font-size:75%;'>
-<?php echo $server[3]; ?></textarea>
+<?php echo htmlentities($server[3],ENT_QUOTES); ?></textarea>
 		</td>
 		<td>
 			<button type='button' name='editClient' value='1' style='margin:0;padding:0;'

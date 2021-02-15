@@ -48,7 +48,7 @@ do {
 	curl_setopt($ch, CURLOPT_URL, $uri);
 	curl_setopt($ch, CURLOPT_PROXYTYPE, CURLPROXY_SOCKS5_HOSTNAME); 	// с разрешением имён через прокси
 	curl_setopt($ch, CURLOPT_PROXY, "127.0.0.1:$torPort");
-	curl_setopt($ch, CURLOPT_CONNECTTIMEOUT,30);
+	curl_setopt($ch, CURLOPT_CONNECTTIMEOUT,180);
 	curl_setopt($ch, CURLOPT_RETURNTRANSFER, TRUE);
 	$netAISdata = curl_exec($ch);
 	$respCode = curl_getinfo($ch,CURLINFO_RESPONSE_CODE);
@@ -56,14 +56,14 @@ do {
 	curl_close($ch);
 	//echo "respCode=$respCode;\n";
 	if($respCode != 200) {
-		echo "No connect to $netAISserverURI\n";
+		echo "\nNo connect to $netAISserverURI\n";
 		echo "Server return: $netAISdata\n";
 		$netAISdata = array();
 		goto END;
 	}
 	$netAISdata = json_decode($netAISdata,TRUE);
 	if(!is_array($netAISdata)) {
-		echo "Error on connect to $netAISserverURI\n";
+		echo "\nError on connect to $netAISserverURI\n";
 		echo "Server return: $netAISdata\n";
 		$netAISdata = array();
 		goto END;
