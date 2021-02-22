@@ -36,7 +36,10 @@ if(substr($netAISserverURI,-6) == '.onion') $netAISserverURI .= $serverPath;
 $vehicle = getSelfParms(); 	// базовая информация о себе
 do {
 	clearstatcache(TRUE,$selfStatusFileName); 	// from params.php
-	if((time() - filemtime($selfStatusFileName)) > $selfStatusTimeOut) break; 	// статус протух. Статус меняется в интерфейсе. Если его долго не дёргать (сутки по умолчанию) -- передача статуса прекращается. И приём, соответственно.
+	if($selfStatusTimeOut and ((time() - filemtime($selfStatusFileName)) > $selfStatusTimeOut)) { 	// статус протух. Статус меняется в интерфейсе. Если его долго не дёргать (сутки по умолчанию) -- передача статуса прекращается. И приём, соответственно.
+		error_log("exchange spatial info stopped by the inactive user reason");
+		break;
+	}
 
 	updSelf($vehicle); 	// запишем свежую информацию о себе
 	//echo "vehicle: "; print_r($vehicle);
@@ -81,7 +84,7 @@ do {
 		$aisData = json_decode(file_get_contents($netAISJSONfileName),TRUE); 	// 
 	}
 	else {
-		echo "netAISJSONfileName don't exist \n";
+		echo "no netAIS targets, $netAISJSONfileName don't exist \n";
 		$aisData = array();
 	}
 	//echo "aisData from file: "; print_r($aisData);
@@ -153,7 +156,7 @@ if(!$netAISgpsdPort) $netAISgpsdPort = 2947;
 
 clearstatcache(TRUE,$selfStatusFileName);
 //echo "filemtime=".filemtime($selfStatusFileName)."; selfStatusTimeOut=$selfStatusTimeOut;\n";
-if((time() - filemtime($selfStatusFileName)) > $selfStatusTimeOut) $status = array(); 	// статус протух
+if($selfStatusTimeOut and ((time() - filemtime($selfStatusFileName)) > $selfStatusTimeOut)) $status = array(); 	// статус протух
 else $status = unserialize(file_get_contents($selfStatusFileName)); 	// считаем файл состояния
 if(!$status) {
 	$status = array();
