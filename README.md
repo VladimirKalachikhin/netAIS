@@ -29,7 +29,7 @@ The [GaladrielMap](http://galadrielmap.hs-yachten.at/) chart plotter receives ne
 Also, this file format identical  [gpsdAISd](https://github.com/VladimirKalachikhin/gpsdAISd) file format.
 
 ## Demo
-Public group for additions:  
+Public group for testing:  
 **2q6q4phwaduy4mly2mrujxlhpjg7el7z2b4u6s7spghylcd6bv3eqvyd.onion**  
 All active group members are visible on  [GaladrielMap](http://galadrielmap.hs-yachten.at/) [Live demo](http://130.61.159.53/map/).
 
