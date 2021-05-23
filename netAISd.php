@@ -1,10 +1,25 @@
 <?php
-/**/
+/* Демон.
+Отдаёт данные netAIS как поток обычных данных AIS:
+$ nc localhost 3838
+$ telnet localhost 3838
+
+Умеет также общаться по протоколу gpsd:
+$ cgps localhost:3838
+$ telnet localhost 3838
+*/
 require('fcommon.php'); 	// 
 require('params.php'); 	// 
 getAISdFilesNames();
 
-$loopTime = 1000000; 	// microseconds, the time of one survey gpsd cycle is not less than, but not more, if possible.; цикл не должен быть быстрее, иначе он займёт весь процессор.
+/*
+$loopTime -- "pool mode", $sockWait --  "wait mode"
+Правильно только pool mode, потому что в wait mode данные будут отдаваться со скоростью
+чтения из сокета, и найдётся кто-нибудь, кто их будет читать с такой скоростью. Тогда демон
+займёт весь процессор.
+*/
+$loopTime = 1000000; 	// microseconds, the time of one survey gpsd cycle is not less than, but not more, if possible.; цикл не должен быть быстрее, иначе он займёт весь процессор. Если нет переменной -- обязательно $sockWait
+$sockWait = 0; 	// seconds, socket wait timeout. Must be 0 if $loopTime present. Else -- set "wait" mode. Должно быть 0, если есть $loopTime, т.е. -- pool mode. Иначе -- wait mode, по событиям чтения/записи сокетов
 $waitLoops = 3; 	// time to wait for client handshake. If no -- flood.
 
 if(IRun()) { 	// Я ли?
@@ -50,16 +65,18 @@ if(!$res) {
 	return 1;
 }
 
-$socksRead = NULL; $socksWrite = NULL; $socksError = NULL; 	// массивы для изменивших состояние сокетов (с учётом, что они в socket_select() по ссылке, и NULL прямо указать нельзя)
+$socksRead = array(); $socksWrite = array(); $socksError = NULL; 	// массивы для изменивших состояние сокетов (с учётом, что они в socket_select() по ссылке, и NULL прямо указать нельзя)
 $clients = array(); $messages = array();
 $aisData = fileAISdata(); 	// данные AIS одни на всех, читать файл будем стараться реже
-//print_r($aisData);
+#print_r($aisData);
 echo "Ready to connection from $netAISdHost:$netAISdPort\n";
+$status = '';
 do {
 	$startTime = microtime(TRUE);
 	$socksRead[] = $masterSock; 	// 
-	//print_r($socksRead);
-	$num_changed_sockets = socket_select($socksRead, $socksWrite, $socksError, 0);
+	#print_r($socksRead);
+	$num_changed_sockets = socket_select($socksRead, $socksWrite, $socksError, $sockWait);
+	#echo "\n $status \n";
 	$socksReadCNT = @count($socksRead); $socksWriteCNT = @count($socksWrite);
 	if ($num_changed_sockets === false) {
 		echo "Error on sockets: " . socket_strerror(socket_last_error()) . "\n";
@@ -79,10 +96,12 @@ do {
 		$messages[$n]['loopCNT'] = 0; 	// 	счётчик оборотов на предмет выявления молчания клиента
 		$socksWrite = $clients; 	// 	 Сейчас надо писать, а читать не надо
 		echo "Connected!                                    \n";
+		$status = 'Connected!';
 		continue; 	// на следующем обороте проверится готовность нового клиента принять данные
 	}
 
 	// Читаем
+	#echo "socksReadCNT=$socksReadCNT;\n";
 	foreach($socksRead as $sock) {
 		if($sock === $masterSock) {
 			$msgsock = socket_accept($masterSock); 	// ждём входящего соединения
@@ -99,9 +118,10 @@ do {
 			continue; 	// запросов ещё не было. Однако, на следующем обороте от него могут принять команду до отправки $greeting. Пофиг?
 		}
 		$sockKey = array_search($sock,$clients); 	// номер этого сокета в массивах клиентов
-		//echo "\nClient sockKey=$sockKey;\n";
+		#echo "\nClient sockKey=$sockKey;\n";
 		$buf = @socket_read($sock, 2048, PHP_NORMAL_READ); 	// ждём команды
-		//echo "\nbuf=$buf|\n";
+		#echo "\nbuf=$buf|\n";
+		$status = 'socket_read';
 		if($buf === FALSE) { 	// клиент умер
 			echo "\nFailed to read data from client by: " . socket_strerror(socket_last_error($sock)) . "\n";
 		    socket_close($sock);
@@ -148,6 +168,7 @@ do {
 				continue;
 			}
 			$messages[$client]['output'] = getAISData($aisData,array(FALSE,TRUE));
+			#print_r($messages[$client]['output']);
 			continue;
 		}
 		// Действия по WATCH
@@ -237,11 +258,11 @@ do {
 	$socksWrite = $socksRead; 	// 	
 	$cnt = count($clients);
 	echo "Connected $cnt clients, ready $socksReadCNT read and $socksWriteCNT write sockets       \r";
-	if($cnt == $oldClientsCnt) { 	// количество клиентов за оборот не изменилось
+	if($loopTime and ($cnt == $oldClientsCnt)) { 	// pool и количество клиентов за оборот не изменилось
 		$sleepTime = $loopTime - (microtime(TRUE)-$startTime);
 		if($sleepTime > 0) usleep($sleepTime); 	// ждём, если надо
 		$aisData = fileAISdata(); 	// данные AIS одни на всех
-	} 	// не ждём -- нового клиента надо обслужить
+	} 	// не ждём -- wait или нового клиента надо обслужить
 	$oldClientsCnt = $cnt;
 } while (true);
 socket_close($masterSock);

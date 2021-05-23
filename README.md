@@ -59,7 +59,9 @@ The netAIS data may be received as:
 
 * local file. This way uses [GaladrielMap](http://galadrielmap.hs-yachten.at/) chart plotter. Full featured.
 * network socket with gpsd:// protocol. Available broadcast imo, vin, custom shiptype and custom status text.
-* network socket with the flow of AIS sentences 18,24 and 27. Suitable for [OpenCPN](https://opencpn.org/), [OruxMaps](https://www.oruxmaps.com/cs/es) and an iron chart plotters. Base features only.  
+* network socket with the flow of AIS sentences 18,24 and 27. Suitable for [OpenCPN](https://opencpn.org/), [OruxMaps](https://www.oruxmaps.com/cs/es), [Signal K](https://signalk.org/) and an iron chart plotters. Base features only.
+
+Network socket serve by the separate daemon, disabled by default. Enable it in _params.php_ and open the web interface.
  
 ### Configure OpenCPN
 Create a network connection as described in [OpenCPN manual](https://opencpn.org/wiki/dokuwiki/doku.php?id=opencpn:opencpn_user_manual:options_setting:connections#add_a_network_connection).  
@@ -76,15 +78,22 @@ After this turn on the showing AIS targets:
 Click 'tracks' option in top menu.  
 Select **Sensors** -> **Start AIS**
 
-## Web-interface
+### Configure Signal K
+Jast add "Server -> Data Connections" with:  
+Data Type: NMEA0183  
+NMEA 0183 Source: TCP Client  
+Host: {Value of $netAISdHost from _params.php_, localhost by default}  
+Port: {Value of $netAISdPort from _params.php_, 3838 by default}  
+
+## Web interface
 ![screen](screenshots/s1.png)   
-Web-interface allows you to control: 
+Web interface allows you to control: 
 
 * Open/close your private group (server On/Off) - the first section of the screen.
 * Configure membership and start/stop watch on other groups - middle section.
 * Set your own status and the message to bring - bottom section.
 
-Web-interface optimised to mobile and/or e-Inc devices, old ones including.
+Web interface optimised to mobile and/or e-Inc devices, old ones including.
 
 ## Thanks
 * [Aaron Gong Hsien-Joen](https://github.com/ais-one/phpais) for AIS encoder
