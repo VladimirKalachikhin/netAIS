@@ -1,28 +1,28 @@
 # netAIS [![License: CC BY-SA 4.0](https://img.shields.io/badge/License-CC%20BY--SA%204.0-lightgrey.svg)](https://creativecommons.org/licenses/by-sa/4.0/)
 
-## v. 1.0
+## v. 1.3
 
-Exchange AIS-like messages via the Internet to watch position members of your private group. No need to a dedication server with a real IP address.  
+Exchange AIS-like messages via the Internet to watch position members of your private group. No need for a dedicated server with a real IP address.  
 Suitable for fishing, regatta and collective water recreation.  
 
 ![scheme](screenshots/art.png)   
-Software use [TOR](torproject.org) as a communication environment, so it works smoothly via mobile internet and public wi-fi. Spatial info gets via [gpsd](https://gpsd.io/).  
+Software use [TOR](torproject.org) as a communication environment, so it works smoothly via mobile internet and public wi-fi. Spatial info gets from [gpsd](https://gpsd.io/) or [Signal K](https://signalk.org/).  
 netAIS messages can be accepted by any AIS-compatible device or software.
 
 ## Features
-* Serving one private group.
-* Membership in any number groups.
-* English and Russian web-interface.
+* Service one private group.
+* Membership in any number of groups.
+* English and Russian web interface.
 
 ## Technical
-Any of the software kit has a client and a server for one private group. The server must be configured as a TOR hidden service.  
-You must get .onion address of this hidden service by anyway - by email, SMS or pigeon post, and configure the client with it.  
-The client calls to the server with spatial and other info in AIS-like format. Server return info about all group members.  
+Any of the software kits has a client and a server for one private group. The server must be configured as a TOR hidden service.  
+You must get .onion address of this hidden service in any way - by email, SMS or pigeon post, and configure the client with it.  
+The client calls to the server with spatial and other info in AIS-like format. Server return info about all of the group members.  
 This info puts to file and may be got asynchronously.  
 Info is a JSON encoded array with MMSI keys and an array of data as value. The data are key-value pair as described in gpsd/www/AIVDM.adoc (if you have gpsd) or [e-Navigation Netherlands](http://www.e-navigation.nl/system-messages) site, except:
 
 * The units of measurement are given in the human species
-* The timestamp  is Unix timestamp
+* The timestamp  is a Unix timestamp
 
 The [GaladrielMap](http://galadrielmap.hs-yachten.at/) chart plotter receives netAIS info directly from the file. For the others has a daemon that cast info as standard AIS flow.
 
@@ -51,13 +51,14 @@ Update _params.php_ to address and port of AIS cast daemon, if need, in $netAISd
 The information abou you vehicle stored in _boatInfo.ini_ file. Fill it correctly.
 
 ### Spatial info
-netAIS get your positioning from gpsd instance.
-How to install and configure gpsd see [gpsd pages](https://gpsd.io/). Update _params.php_ to gpsd host and port, if you want.
+Usually, netAIS client gets your positioning from **gpsd** instance on your server. How to install and configure **gpsd** see [gpsd pages](https://gpsd.io/). Update _params.php_ to **gpsd** host and port, if you want.  
+Another way gets spatial info is a **Signal K** infrastructure. netAIS client will try found **Signal K** service on you lical network, and get a position from it.  
+However, it is better to set the **Signal K** server address in _params.php_.
 
 ## Usage
 The netAIS data may be received as:  
 
-* local file. This way uses [GaladrielMap](http://galadrielmap.hs-yachten.at/) chart plotter. Full featured.
+* local file. This way uses [GaladrielMap](http://galadrielmap.hs-yachten.at/) chart plotter. Full-featured.
 * network socket with gpsd:// protocol. Available broadcast imo, vin, custom shiptype and custom status text.
 * network socket with the flow of AIS sentences 18,24 and 27. Suitable for [OpenCPN](https://opencpn.org/), [OruxMaps](https://www.oruxmaps.com/cs/es), [Signal K](https://signalk.org/) and an iron chart plotters. Base features only.
 
@@ -100,4 +101,6 @@ Web interface optimised to mobile and/or e-Inc devices, old ones including.
 * [Metrize Icons by Alessio Atzeni](https://icon-icons.com/pack/Metrize-Icons/1130) for icons.
 
 ## Support
+[Discussions](https://github.com/VladimirKalachikhin/netAIS/discussions)
+
 You can get support for netAIS software for a beer [via PayPal](https://paypal.me/VladimirKalachikhin) or [YandexMoney](https://yasobe.ru/na/galadrielmap) at [galadrielmap@gmail.com](mailto:galadrielmap@gmail.com)  

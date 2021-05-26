@@ -21,9 +21,9 @@ getAISdFilesNames();
 
 $options = getopt("s:");
 //print_r($options); //
-$netAISserverURI = filter_var($options['s'],FILTER_SANITIZE_URL);
+$netAISserverURI = @filter_var($options['s'],FILTER_SANITIZE_URL);
 if(!$netAISserverURI) {
-	echo "Option:\n-sGroupServer.onion\n";
+	echo "Require option:\n-sGroupServer.onion\n";
 	return;
 }
 
@@ -41,7 +41,8 @@ do {
 		break;
 	}
 
-	updSelf($vehicle); 	// запишем свежую информацию о себе
+	$netAISdata = array();
+	if(!updSelf($vehicle)) goto END;  	// запишем свежую информацию о себе, если там нет координат -- упс.
 	//echo "vehicle: "; print_r($vehicle);
 	$vehicleJSON = json_encode($vehicle);
 	$uri = "$netAISserverURI?member=".urlencode($vehicleJSON);
@@ -75,6 +76,7 @@ do {
 	// Там я тоже, поэтому удалим
 	unset($netAISdata[$vehicle['mmsi']]); 
 	//echo "Recieved without me: ";print_r($netAISdata);
+	//echo "aisData from file: "; print_r($aisData);
 
 	END:
 	// Возьмём файл с целями netAIS
@@ -87,11 +89,6 @@ do {
 		echo "no netAIS targets, $netAISJSONfileName don't exist \n";
 		$aisData = array();
 	}
-	//echo "aisData from file: "; print_r($aisData);
-	// запишем свежее в общий файл
-	foreach($netAISdata as $veh) {
-		updAISdata($veh); 	
-	}
 	//print_r($aisData);
 	// Почистим общий файл от старых целей. Нормально это делает сервер, но связи с сервером может не быть
 	$now = time();
@@ -99,6 +96,10 @@ do {
 		if(($now-$data['timestamp'])>$noVehicleTimeout) unset($aisData[$veh]);
 	}
 	//echo "aisData before writing: <pre>"; print_r($aisData);echo "</pre>\n";
+	// запишем свежее в общий файл
+	foreach($netAISdata as $veh) {
+		updAISdata($veh); 	
+	}
 	// зальём обратно
 	file_put_contents($netAISJSONfileName,json_encode($aisData)); 	// 
 	@chmod($netAISJSONfileName,0666); 	// если файла не было
@@ -150,9 +151,9 @@ return $vehicle;
 
 function updSelf(&$vehicle) {
 /**/
-global $netAISgpsdHost,$netAISgpsdPort,$selfStatusFileName,$selfStatusTimeOut; 	// from params.php
-if(!$netAISgpsdHost) $netAISgpsdHost = 'localhost';
-if(!$netAISgpsdPort) $netAISgpsdPort = 2947;
+global $netAISgpsdHost,$netAISgpsdPort,$netAISsignalKhost,$selfStatusFileName,$selfStatusTimeOut; 	// from params.php
+if($netAISgpsdHost) $host = $netAISgpsdHost;
+else $host = $netAISsignalKhost;
 
 clearstatcache(TRUE,$selfStatusFileName);
 //echo "filemtime=".filemtime($selfStatusFileName)."; selfStatusTimeOut=$selfStatusTimeOut;\n";
@@ -166,9 +167,9 @@ if(!$status) {
 //echo "status: <pre>"; print_r($status);echo "</pre>\n";
 $vehicle['status'] = (int)$status[0]; 	// Navigational status 0 = under way using engine, 1 = at anchor, 2 = not under command, 3 = restricted maneuverability, 4 = constrained by her draught, 5 = moored, 6 = aground, 7 = engaged in fishing, 8 = under way sailing, 9 = reserved for future amendment of navigational status for ships carrying DG, HS, or MP, or IMO hazard or pollutant category C, high speed craft (HSC), 10 = reserved for future amendment of navigational status for ships carrying dangerous goods (DG), harmful substances (HS) or marine pollutants (MP), or IMO hazard or pollutant category A, wing in ground (WIG);11 = power-driven vessel towing astern (regional use), 12 = power-driven vessel pushing ahead or towing alongside (regional use); 13 = reserved for future use, 14 = AIS-SART (active), MOB-AIS, EPIRB-AIS 15 = undefined = default (also used by AIS-SART, MOB-AIS and EPIRB-AIS under test)
 $vehicle['status_text'] = $status[1];
-$TPV = getPosAndInfo($netAISgpsdHost,$netAISgpsdPort); 	// fGPSD.php
-//print_r($TPV);
-if(! isset($TPV['error'])) {
+$TPV = getPosAndInfo($host,$netAISgpsdPort); 	// fGPSD.php
+//echo "TPV:";print_r($TPV);echo "\n";
+if($TPV and (! isset($TPV['error']))) {
 	$vehicle['speed'] = (float)$TPV['velocity']; 	// SOG Speed over ground in m/sec
 	if(($TPV['errX'] and $TPV['errX']<10) and ($TPV['errY'] and $TPV['errY']<10)) $accuracy = 1;
 	else $accuracy = 0;
@@ -179,8 +180,10 @@ if(! isset($TPV['error'])) {
 	if(!$vehicle['course']) (int)$vehicle['course'] = $TPV['heading'];
 	$vehicle['heading'] = $TPV['heading']; 	// True heading Degrees (0-359) (511 indicates not available = default)
 	$vehicle['timestamp'] = time();
+	return TRUE;
 }
 else echo "Get TPV error:".$TPV['error']."\n";
+	return FALSE;
 } // end function updSelf
 
 function updAISdata($vehicleInfo) {
