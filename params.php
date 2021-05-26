@@ -16,7 +16,7 @@ $netAISserverDataFileName = '/home/www-data/netAIS/data/netAISserverData'; 	// r
 
 // tor hidden service address
 // config you http server correctly to run tor hidden service!
-//$onion = ''; 	// Server onion address. If not - no server run. This is a content of /var/lib/tor/hidden_service_netAIS/hostname file
+$onion = '2q6q4phwaduy4mly2mrujxlhpjg7el7z2b4u6s7spghylcd6bv3eqvyd.onion'; 	// Server onion address. If not - no server run. This is a content of /var/lib/tor/hidden_service_netAIS/hostname file
 //$onion = ''; 	// Server onion address. If not - no server run. This is a content of /var/lib/tor/hidden_service_netAIS/hostname file
 $torPort = 9050; 	// from torrc, default 9050
 
