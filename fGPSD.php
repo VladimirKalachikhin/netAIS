@@ -179,11 +179,15 @@ function getPosAndInfoFromSignalK($server=array()) {
 */
 
 //error_log("fGPSD.php getPosAndInfoFromSignalK: asking spatial info from SignalK");
-$serversName = sys_get_temp_dir().'/signalKservers';
-
-$findServers = unserialize(file_get_contents($serversName));
-unlink($serversName);
-//echo "Read findServers:"; print_r($findServers);
+$serversDirName = sys_get_temp_dir().'/signalK';
+$serversName = $serversDirName.'/signalKservers';
+if(!file_exists($serversDirName)){ 	// один file_exists быстрей, чем два mkdir и chmod
+	mkdir($serversDirName, 0777,true); 	// 
+	chmod($serversDirName,0777); 	// права будут только на каталог netAIS. Если он вложенный, то на предыдущие, созданные по true в mkdir, прав не будет. Тогда надо использовать umask.
+}
+$findServers = unserialize(@file_get_contents($serversName));
+$serversCount = @count($findServers);
+//echo "Read findServers:"; print_r($findServers); echo "\n";
 
 if(!$findServers) {
 	if($server) {
@@ -271,8 +275,11 @@ foreach($findServers as $serverID => $server){
 }
 krsort($spatialInfo); 	// отсортируем по времени к прошлому
 //print_r(reset($spatialInfo));
-//echo "Write findServers:"; print_r($findServers);
-file_put_contents($serversName,serialize($findServers));
+//echo "Write findServers:"; print_r($findServers); echo "\n";
+if($serversCount != count($findServers)){
+	file_put_contents($serversName,serialize($findServers));
+	@chmod($serversName,0666); 	// если файла не было
+}
 return reset($spatialInfo);
 } // end function getPosAndInfoFromSignalK
 

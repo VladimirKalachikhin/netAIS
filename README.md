@@ -52,7 +52,7 @@ The information abou you vehicle stored in _boatInfo.ini_ file. Fill it correctl
 
 ### Spatial info
 Usually, netAIS client gets your positioning from **gpsd** instance on your server. How to install and configure **gpsd** see [gpsd pages](https://gpsd.io/). Update _params.php_ to **gpsd** host and port, if you want.  
-Another way gets spatial info is a **Signal K** infrastructure. netAIS client will try found **Signal K** service on you lical network, and get a position from it.  
+Another way gets spatial info is a **Signal K** infrastructure. netAIS client will try found the **Signal K** service on your local network, and get a position from it.  
 However, it is better to set the **Signal K** server address in _params.php_.
 
 ## Usage
