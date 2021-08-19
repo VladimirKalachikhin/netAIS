@@ -2,7 +2,7 @@
 $path_parts = pathinfo(__FILE__); // определяем каталог скрипта
 chdir($path_parts['dirname']); // задаем директорию выполнение скрипта
 
-$version = ' v.1.3.0';
+$version = ' v.1.3.1';
 require('internationalisation.php'); 	// 
 require('params.php'); 	// 
 //echo $_SERVER['PHP_SELF'];
