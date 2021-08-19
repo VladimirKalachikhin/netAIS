@@ -27,7 +27,7 @@ if(IRun()) { 	// Я ли?
 	return;
 }
 
-$greeting = '{"class":"VERSION","release":"netAIS_0.0","rev":"alpha","proto_major":0,"proto_minor":1}';
+$greeting = '{"class":"VERSION","release":"netAISd_1.","rev":"stable","proto_major":1,"proto_minor":3}';
 $SEEN_GPS = 0x01; $SEEN_AIS = 0x08;
 $netAISdevice = array(
 'class' => 'DEVICE',
@@ -90,7 +90,7 @@ do {
 			continue;
 		}
 		$msg = $greeting;
-		$clients = array($msgsock);
+		$clients[] = $msgsock;
 		$n = array_search($msgsock,$clients);
 		$messages[$n]['output'] = $msg; 	// 	
 		$messages[$n]['loopCNT'] = 0; 	// 	счётчик оборотов на предмет выявления молчания клиента
@@ -104,7 +104,7 @@ do {
 	#echo "socksReadCNT=$socksReadCNT;\n";
 	foreach($socksRead as $sock) {
 		if($sock === $masterSock) {
-			$msgsock = socket_accept($masterSock); 	// ждём входящего соединения
+			$msgsock = socket_accept($masterSock); 	// принимаем входящее соединение
 			if(!$msgsock) {
 				echo "\nFailed to accept incoming by: " . socket_strerror(socket_last_error($msgsock)) . "\n";
 				continue;
