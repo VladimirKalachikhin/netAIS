@@ -331,7 +331,7 @@ foreach($servers as $uri => $server) {
 	}
 	else { 	// убъём
 		killClient($uri);
-		$netAISJSONfileName = $netAISJSONfilesDir.$uri
+		$netAISJSONfileName = $netAISJSONfilesDir.$uri;
 		@unlink($netAISJSONfileName); 	// если netAIS выключен -- файл с целями должен быть удалён, иначе эти цели будут показываться вечно
 		$oneClientRun -= 1;
 	}
