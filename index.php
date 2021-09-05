@@ -2,9 +2,13 @@
 $path_parts = pathinfo(__FILE__); // определяем каталог скрипта
 chdir($path_parts['dirname']); // задаем директорию выполнение скрипта
 
-$version = ' v.1.3.1';
+$version = ' v.1.4.0';
+require('fcommon.php'); 	// 
 require('internationalisation.php'); 	// 
 require('params.php'); 	// 
+$netAISJSONfilesDir = getAISdFilesNames($netAISJSONfilesDir); 	// определим имя и создадим каталог для данных netAIS
+$serversListFileName = 'server/serversList.csv'; 	// list of available servers
+
 //echo $_SERVER['PHP_SELF'];
 clearstatcache(TRUE,$selfStatusFileName); 	// from params.php
 if((time() - @filemtime($selfStatusFileName)) > $selfStatusTimeOut) $status = array(); 	// статус протух
@@ -314,7 +318,7 @@ style='margin:0.5rem 0 0.5rem 0;padding:0.5rem;border:1px solid black;border-rad
 
 function runClients() {
 /* для каждого url в $servers организует периодический запуск клиента */
-global $servers,$phpCLIexec,$netAISdHost,$netAISdPort,$netAISJSONfileName;
+global $servers,$phpCLIexec,$netAISdHost,$netAISdPort,$netAISJSONfilesDir;
 $oneClientRun = 0;
 foreach($servers as $uri => $server) {
 	if($server[1]) { 	// запустим, он проверяет сам, запущен ли
@@ -327,6 +331,7 @@ foreach($servers as $uri => $server) {
 	}
 	else { 	// убъём
 		killClient($uri);
+		$netAISJSONfileName = $netAISJSONfilesDir.$uri
 		@unlink($netAISJSONfileName); 	// если netAIS выключен -- файл с целями должен быть удалён, иначе эти цели будут показываться вечно
 		$oneClientRun -= 1;
 	}

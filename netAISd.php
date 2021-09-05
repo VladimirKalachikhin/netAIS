@@ -1,16 +1,17 @@
 <?php
 /* Демон.
 Отдаёт данные netAIS как поток обычных данных AIS:
-$ nc localhost 3838
-$ telnet localhost 3838
+$ nc localhost 3800
+$ telnet localhost 3800
 
 Умеет также общаться по протоколу gpsd:
-$ cgps localhost:3838
-$ telnet localhost 3838
+$ cgps localhost:3800
+$ telnet localhost 3800
 */
 require('fcommon.php'); 	// 
 require('params.php'); 	// 
-getAISdFilesNames();
+$netAISJSONfilesDir = getAISdFilesNames($netAISJSONfilesDir); 	// определим имя и создадим каталог для данных netAIS
+$netAISserverDataFileName = $netAISJSONfilesDir.'netAISserverData';
 
 /*
 $loopTime -- "pool mode", $sockWait --  "wait mode"
@@ -476,15 +477,15 @@ return $aisData;
 
 function fileAISdata(){
 /* Читает файл данных AIS*/
-global $netAISJSONfileName;
+global $netAISserverDataFileName;
 // Возьмём файл с целями netAIS
-//echo "netAISJSONfileName=$netAISJSONfileName;\n";
-clearstatcache(TRUE,$netAISJSONfileName);
-if(file_exists($netAISJSONfileName)) {
-	$aisData = json_decode(file_get_contents($netAISJSONfileName),TRUE); 	// 
+//echo "netAISserverDataFileName=$netAISserverDataFileName;\n";
+clearstatcache(TRUE,$netAISserverDataFileName);
+if(file_exists($netAISserverDataFileName)) {
+	$aisData = json_decode(file_get_contents($netAISserverDataFileName),TRUE); 	// 
 }
 else {
-	echo "\n$netAISJSONfileName don't exist \n";
+	echo "\n$netAISserverDataFileName don't exist \n";
 	$aisData = array();
 }
 //echo "aisData from file: "; print_r($aisData);
@@ -525,7 +526,6 @@ function IRun() {
 global $phpCLIexec;
 $pid = getmypid();
 //echo "pid=$pid\n";
-//echo "ps -A w | grep '".pathinfo(__FILE__,PATHINFO_BASENAME)." -s$netAISserverURI'\n";
 exec("ps -A w | grep '".pathinfo(__FILE__,PATHINFO_BASENAME)."'",$psList);
 if(!$psList) exec("ps w | grep '".pathinfo(__FILE__,PATHINFO_BASENAME)."'",$psList); 	// for OpenWRT. For others -- let's hope so all run from one user
 //print_r($psList); //

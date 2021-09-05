@@ -9,7 +9,8 @@ chdir($path_parts['dirname']); // задаем директорию выполн
 
 require('fcommon.php'); 	// 
 require('params.php'); 	// 
-getAISdFilesNames();
+$netAISJSONfilesDir = getAISdFilesNames($netAISJSONfilesDir); 	// определим имя и создадим каталог для данных netAIS
+$netAISserverDataFileName = $netAISJSONfilesDir.'netAISserverData';
 //echo "netAISserverDataFileName=$netAISserverDataFileName<br>\n";
 
 $member = json_decode(@$_REQUEST['member'],TRUE, 512, JSON_BIGINT_AS_STRING); 	// сведения от клиента, JSON_BIGINT_AS_STRING возможно поможет для строк -- числовых кодов. Не помогает.

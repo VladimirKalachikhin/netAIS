@@ -17,7 +17,7 @@ $sleepTime = 5;
 $serverPath = '/netAISserver.php';
 require('fcommon.php'); 	// 
 require('params.php'); 	// 
-getAISdFilesNames();
+$netAISJSONfilesDir = getAISdFilesNames($netAISJSONfilesDir); 	// определим имя и создадим каталог для данных netAIS
 
 $options = getopt("s:");
 //print_r($options); //
@@ -31,6 +31,7 @@ if(IRun($netAISserverURI)) { 	// Я ли?
 	echo "I'm already running, exiting.\n"; 
 	return;
 }
+$netAISJSONfileName = $netAISJSONfilesDir.$netAISserverURI;
 if(substr($netAISserverURI,-6) == '.onion') $netAISserverURI .= $serverPath;
 
 $vehicle = getSelfParms(); 	// базовая информация о себе
@@ -51,7 +52,7 @@ do {
 	$ch = curl_init(); 	// tor не http proxy, а file_get_contents не умеет socs. Приходится через жопу. Ой, через cURL.
 	curl_setopt($ch, CURLOPT_URL, $uri);
 	curl_setopt($ch, CURLOPT_PROXYTYPE, CURLPROXY_SOCKS5_HOSTNAME); 	// с разрешением имён через прокси
-	curl_setopt($ch, CURLOPT_PROXY, "127.0.0.1:$torPort");
+	curl_setopt($ch, CURLOPT_PROXY, "$torHost:$torPort");
 	curl_setopt($ch, CURLOPT_CONNECTTIMEOUT,180);
 	curl_setopt($ch, CURLOPT_RETURNTRANSFER, TRUE);
 	$netAISdata = curl_exec($ch);
@@ -60,7 +61,7 @@ do {
 	curl_close($ch);
 	//echo "respCode=$respCode;\n";
 	if($respCode != 200) {
-		echo "\nNo connect to $netAISserverURI\n";
+		echo "\nNo connect to $netAISserverURI $torHost:$torPort\n";
 		echo "Server return: $netAISdata\n";
 		$netAISdata = array();
 		goto END;
@@ -86,7 +87,7 @@ do {
 		$aisData = json_decode(file_get_contents($netAISJSONfileName),TRUE); 	// 
 	}
 	else {
-		echo "no netAIS targets, $netAISJSONfileName don't exist \n";
+		echo "no netAIS targets, $netAISJSONfileName don't exist, try to create new \n";
 		$aisData = array();
 	}
 	//print_r($aisData);
@@ -145,7 +146,7 @@ return $run;
 function getSelfParms() {
 /**/
 $vehicle = parse_ini_file('boatInfo.ini',FALSE,INI_SCANNER_TYPED);
-if(!$vehicle['mmsi']) $vehicle['mmsi'] = $vehicle['shipname'];
+if(!$vehicle['mmsi']) $vehicle['mmsi'] = str_pad(substr(crc32($vehicle['shipname']),0,9),9,'0'); 	// левый mmsi, похожий на настоящий -- для тупых, кому не всё равно (SignalK, к примеру)
 return $vehicle;
 }
 
@@ -158,7 +159,7 @@ else $host = $netAISsignalKhost;
 clearstatcache(TRUE,$selfStatusFileName);
 //echo "filemtime=".filemtime($selfStatusFileName)."; selfStatusTimeOut=$selfStatusTimeOut;\n";
 if($selfStatusTimeOut and ((time() - filemtime($selfStatusFileName)) > $selfStatusTimeOut)) $status = array(); 	// статус протух
-else $status = unserialize(file_get_contents($selfStatusFileName)); 	// считаем файл состояния
+else $status = unserialize(@file_get_contents($selfStatusFileName)); 	// считаем файл состояния, которого может не быть
 if(!$status) {
 	$status = array();
 	$status[0]=15; 	// Navigational status 0 = under way using engine, 1 = at anchor, 2 = not under command, 3 = restricted maneuverability, 4 = constrained by her draught, 5 = moored, 6 = aground, 7 = engaged in fishing, 8 = under way sailing, 9 = reserved for future amendment of navigational status for ships carrying DG, HS, or MP, or IMO hazard or pollutant category C, high speed craft (HSC), 10 = reserved for future amendment of navigational status for ships carrying dangerous goods (DG), harmful substances (HS) or marine pollutants (MP), or IMO hazard or pollutant category A, wing in ground (WIG);11 = power-driven vessel towing astern (regional use), 12 = power-driven vessel pushing ahead or towing alongside (regional use); 13 = reserved for future use, 14 = AIS-SART (active), MOB-AIS, EPIRB-AIS 15 = undefined = default (also used by AIS-SART, MOB-AIS and EPIRB-AIS under test)
