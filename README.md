@@ -1,6 +1,6 @@
 # netAIS [![License: CC BY-SA 4.0](https://img.shields.io/badge/License-CC%20BY--SA%204.0-lightgrey.svg)](https://creativecommons.org/licenses/by-sa/4.0/)
 
-## v. 1.3
+## v. 1.4
 
 Exchange AIS-like messages via the Internet to watch position members of your private group. No need for a dedicated server with a real IP address.  
 Suitable for fishing, regatta and collective water recreation.  
