@@ -2,7 +2,10 @@
 $path_parts = pathinfo(__FILE__); // определяем каталог скрипта
 chdir($path_parts['dirname']); // задаем директорию выполнение скрипта
 
-$version = ' v.1.4.0';
+$version = ' v.1.5.0';
+/*
+1.5.0 access by index.php, not by netAISserver.php. So it is possible .onion/?member... uri with common Apache2 config. Yes, for stupid NodeJS.
+*/
 require('fcommon.php'); 	// 
 require('internationalisation.php'); 	// 
 require('params.php'); 	// 
@@ -44,8 +47,10 @@ if (($handle = @fopen($serversListFileName, "r")) !== FALSE) {
 	//echo "<pre>"; print_r($servers); echo "</pre>\n";
 }
 // Определим включённость сервера
-clearstatcache(TRUE,'server/netAISserver.php');
-$serverOn = file_exists('server/netAISserver.php');
+//clearstatcache(TRUE,'server/netAISserver.php');
+//$serverOn = file_exists('server/netAISserver.php');
+clearstatcache(TRUE,'server/index.php');
+$serverOn = file_exists('server/index.php');
 
 
 $str = ""; 	// переменная часть сообщения в каждой секции
@@ -53,6 +58,7 @@ $str = ""; 	// переменная часть сообщения в каждо�
 // вкл/выкл сервера
 if($_REQUEST['stopServer']) { 	
 	@unlink('server/netAISserver.php'); 	// 
+	@unlink('server/index.php'); 	// 
 	$str = $serverOffTXT;
 	$serverOn = FALSE;
 	if($servers[$onion]) $servers[$onion][1] = 0; 	// укажем, что клиент к своему серверу должен быть остановлен
@@ -60,17 +66,21 @@ if($_REQUEST['stopServer']) {
 }
 elseif($_REQUEST['startServer']) {
 	@unlink('server/netAISserver.php'); 	// 
+	@unlink('server/index.php'); 	// 
 	$serverOn = FALSE;
 	if($torRun and $onion) {
 		//exec('ln -sr netAISserver.php server/netAISserver.php'); 	// symlink() не умеет относительные ссылки, и нужен полный путь
 		// но, однако, busybox не умеет ln -sr, поэтому создаём относительную ссылку через жопу:
 		chdir('server');
-		symlink('../netAISserver.php','netAISserver.php');
+		symlink('../netAISserver.php','netAISserver.php'); 	// для совместимости со старыми версиями
+		symlink('../netAISserver.php','index.php');
 		chdir('..');
 		//echo readlink('server/netAISserver.php');
 		// Определим включённость сервера
-		clearstatcache(TRUE,'server/netAISserver.php');
-		$serverOn = file_exists('server/netAISserver.php');
+		//clearstatcache(TRUE,'server/netAISserver.php');
+		//$serverOn = file_exists('server/netAISserver.php');
+		clearstatcache(TRUE,'server/index.php');
+		$serverOn = file_exists('server/index.php');
 		if($serverOn) {
 			if(!$servers[$onion]) $servers[$onion] = array($onion,0,$onion,$myGroupNameTXT);
 			$servers[$onion][1] = 1; 	// укажем, что клиент к своему серверу должен быть запущен

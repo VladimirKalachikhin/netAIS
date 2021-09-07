@@ -26,8 +26,6 @@ Info is a JSON encoded array with MMSI keys and an array of data as value. The d
 
 The [GaladrielMap](http://galadrielmap.hs-yachten.at/) chart plotter receives netAIS info directly from the file. For the others has a daemon that cast info as standard AIS flow.
 
-Also, this file format identical  [gpsdAISd](https://github.com/VladimirKalachikhin/gpsdAISd) file format.
-
 ## Demo
 Public group for testing:  
 **2q6q4phwaduy4mly2mrujxlhpjg7el7z2b4u6s7spghylcd6bv3eqvyd.onion**  
@@ -40,10 +38,10 @@ Linux.
 php-curl
 
 ## Install&configure:
-You must have a web server under Linux with php support and [TOR service](https://2019.www.torproject.org/docs/tor-manual.html.en).  
+You must have a web server under Linux with php support and [TOR service](https://www.torproject.org/docs/tor-manual.html.en).  
 Copy the project files to a web server directory and adjust paths in _params.php_.  
 Set _write_ access to `data/` and `server/` directories for web server user (www-data?).  
-[Configure TOR hidden service](https://2019.www.torproject.org/docs/tor-onion-service.html.en) to `server/` directory if you are going to support a corporate group. It's no need if you want to be a group member only.  
+[Configure TOR hidden service](https://www.torproject.org/docs/tor-onion-service.html.en) to `server/` directory if you are going to support a corporate group. It's no need if you want to be a group member only.  
 Update _params.php_: place to $onion variable address you TOR hidden service. This address located in `hostname` file, as it described in `torrs`. (for example: `# cat /var/lib/tor/hidden_service_netAIS/hostname`)  
 Update _params.php_ to address and port of AIS cast daemon, if need, in $netAISdHo and $netAISdPort variables.
 

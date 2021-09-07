@@ -14,7 +14,8 @@ chdir($path_parts['dirname']); // задаем директорию выполн
 require_once('fGPSD.php'); // fGPSD.php, там есть переменные, которые должны быть глобальным, поэтому здесь
 
 $sleepTime = 5;
-$serverPath = '/netAISserver.php';
+//$serverPath = '/netAISserver.php';
+$serverPath = '/'; 	// ссылка названа index.php, и совместимость с SignalK версией. И вообще -- пусть имя сервера будет любым
 require('fcommon.php'); 	// 
 require('params.php'); 	// 
 $netAISJSONfilesDir = getAISdFilesNames($netAISJSONfilesDir); 	// определим имя и создадим каталог для данных netAIS

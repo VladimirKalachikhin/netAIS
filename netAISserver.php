@@ -18,6 +18,7 @@ $member = json_decode(@$_REQUEST['member'],TRUE, 512, JSON_BIGINT_AS_STRING); 	/
 
 if((!@$member['lon'])or(!@$member['lat'])) {
 	$aisData = 'Spatial info required, sorry.';
+	http_response_code(400);
 	goto OUT;
 } 
 
@@ -42,6 +43,7 @@ foreach($aisData as $vehicle => &$data) {
 file_put_contents($netAISserverDataFileName,json_encode($aisData));
 clearstatcache(TRUE,$netAISserverDataFileName);
 
+http_response_code(200);
 OUT:
 $aisData=json_encode($aisData);
 ob_end_clean(); 			// очистим, если что попало в буфер
