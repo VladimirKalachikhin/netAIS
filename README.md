@@ -1,6 +1,6 @@
 # netAIS [![License: CC BY-SA 4.0](https://img.shields.io/badge/License-CC%20BY--SA%204.0-lightgrey.svg)](https://creativecommons.org/licenses/by-sa/4.0/)
 
-## v. 1.4
+## v. 1.5
 
 Exchange AIS-like messages via the Internet to watch position members of your private group. No need for a dedicated server with a real IP address.  
 Suitable for fishing, regatta and collective water recreation.  
@@ -56,7 +56,8 @@ However, it is better to set the **Signal K** server address in _params.php_.
 ## Usage
 The netAIS data may be received as:  
 
-* local file. This way uses [GaladrielMap](http://galadrielmap.hs-yachten.at/) chart plotter. Full-featured.
+* local file. This way uses [GaladrielMap](http://galadrielmap.hs-yachten.at/) chart plotter. Full-featured, include user-defined status messages.
+* via [gpsdPROXY](https://github.com/VladimirKalachikhin/gpsdPROXY). Easiest, recommended. Jast set _*$netAISgpsdHost* *$netAISgpsdPort* in _params.php_to gpsdPROXY. gpsdPROXY will return netAIS data as well. Full-featured too.
 * network socket with gpsd:// protocol. Available broadcast imo, vin, custom shiptype and custom status text.
 * network socket with the flow of AIS sentences 18,24 and 27. Suitable for [OpenCPN](https://opencpn.org/), [OruxMaps](https://www.oruxmaps.com/cs/es), [Signal K](https://signalk.org/) and an iron chart plotters. Base features only.
 

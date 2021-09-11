@@ -14,6 +14,15 @@ chdir($path_parts['dirname']); // задаем директорию выполн
 require_once('fGPSD.php'); // fGPSD.php, там есть переменные, которые должны быть глобальным, поэтому здесь
 
 $sleepTime = 5;
+$greeting = '{"class":"VERSION","release":"netAISclient_1","rev":"5","proto_major":5,"proto_minor":1}'; 	// приветствие для gpsdPROXY
+$SEEN_AIS = 0x08;
+$netAISdevice = array(
+'class' => 'DEVICE',
+'path' => 'netAISclient',
+'activated' => date('c'),
+'flags' => $SEEN_AIS,
+'stopbits' => 1
+);
 //$serverPath = '/netAISserver.php';
 $serverPath = '/'; 	// ссылка названа index.php, и совместимость с SignalK версией. И вообще -- пусть имя сервера будет любым
 require('fcommon.php'); 	// 
@@ -34,6 +43,7 @@ if(IRun($netAISserverURI)) { 	// Я ли?
 }
 $netAISJSONfileName = $netAISJSONfilesDir.$netAISserverURI;
 if(substr($netAISserverURI,-6) == '.onion') $netAISserverURI .= $serverPath;
+$spatialProvider = NULL; 	// строка идентификации источника координат
 
 $vehicle = getSelfParms(); 	// базовая информация о себе
 do {
@@ -103,6 +113,55 @@ do {
 		updAISdata($veh); 	
 	}
 	// зальём обратно
+	if(strpos($spatialProvider,'gpsdPROXY')!==FALSE) { 	//
+		//echo "\nОтдадим gpsdPROXY\n";
+		do{
+			$gpsdPROXYsock = createSocketClient($netAISgpsdHost,$netAISgpsdPort); 	// Соединение с gpsdPROXY
+			if($gpsdPROXYsock === FALSE) { 	// клиент умер
+				echo "\nFailed to connect to gpsdPROXY by: " . socket_strerror(socket_last_error($gpsdPROXYsock)) . "\n";
+				break;
+			}
+			$msg = "?CONNECT;\n"; 	// ?CONNECT={"host":"","port":""};
+			$res = socket_write($gpsdPROXYsock, $msg, strlen($msg)); 	// шлём команду подключиться к нам как к gpsd
+			if($res === FALSE) { 	// клиент умер
+				echo "\nFailed to write ?CONNECT to gpsdPROXY socket by: " . socket_strerror(socket_last_error($gpsdPROXYsock)) . "\n";
+				break;
+			}
+			// handshaking as some gpsd
+			$msg = "$greeting\n"; 	// 
+			$res = socket_write($gpsdPROXYsock, $msg, strlen($msg)); 	// шлём приветствие
+			if($res === FALSE) { 	// клиент умер
+				echo "\nFailed to write VERSION to gpsdPROXY socket by: " . socket_strerror(socket_last_error($gpsdPROXYsock)) . "\n";
+				break;
+			}
+			$buf = '';
+			$buf = socket_read($gpsdPROXYsock, 2048, PHP_NORMAL_READ); 	// читаем WATCH, PHP_NORMAL_READ -- ждать \n
+			if($buf === FALSE) { 	// клиент умер
+				echo "\nFailed to read WATCH to gpsdPROXY socket by: " . socket_strerror(socket_last_error($gpsdPROXYsock)) . "\n";
+				break;
+			}
+			$msg = json_encode(array('class' => 'DEVICES', 'devices' => array($netAISdevice)));
+			$msg .= "\n";
+			$res = socket_write($gpsdPROXYsock, $msg, strlen($msg)); 	// шлём DEVICES
+			if($res === FALSE) { 	// клиент умер
+				echo "\nFailed to write DEVICES to gpsdPROXY socket by: " . socket_strerror(socket_last_error($gpsdPROXYsock)) . "\n";
+				break;
+			}
+			$msg = '{"class":"WATCH","enable":true,"json":true,"nmea":false,"raw":0,"scaled":true,"split24":true,"timing":false,"pps":false,"device":"'.$netAISdevice['path'].'","remote":"'.$netAISdevice['path'].'.php"}';
+			$msg .= "\n";
+			$res = socket_write($gpsdPROXYsock, $msg, strlen($msg)); 	// шлём WATCH
+			if($res === FALSE) { 	// клиент умер
+				echo "\nFailed to write WATCH to gpsdPROXY socket by: " . socket_strerror(socket_last_error($gpsdPROXYsock)) . "\n";
+				break;
+			}
+			// handshaking success, will send data
+			//echo "aisData before send to gpsdPROXY: <pre>"; print_r($aisData);echo "</pre>\n";
+			$msg = json_encode(array('class'=>'netAIS','device'=>$netAISdevice['path'],'data'=>$aisData));
+			$msg .= "\n";
+			$res = socket_write($gpsdPROXYsock, $msg, strlen($msg)); 	// шлём данные
+			socket_close($gpsdPROXYsock);
+		}while(FALSE);
+	}
 	file_put_contents($netAISJSONfileName,json_encode($aisData)); 	// 
 	@chmod($netAISJSONfileName,0666); 	// если файла не было
 	clearstatcache(TRUE,$netAISJSONfileName);
@@ -197,6 +256,23 @@ foreach($vehicleInfo as $opt => $value) {
 	$aisData[$vehicle][$opt] = $value; 	// 
 }
 }
+
+
+function createSocketClient($host,$port){
+/* создаёт сокет, соединенный с $host,$port на другом компьютере */
+$sock = socket_create(AF_INET, SOCK_STREAM, SOL_TCP);
+if(!$sock) {
+	echo "Failed to create client socket by reason: " . socket_strerror(socket_last_error()) . "\n";
+	return FALSE;
+}
+if(! socket_connect($sock,$host,$port)){ 	// подключаемся к серверу
+	echo "Failed to connect to remote server $host:$port by reason: " . socket_strerror(socket_last_error()) . "\n";
+	return FALSE;
+}
+//echo "Connected to $host:$port!\n";
+//$res = socket_write($socket, "\n");
+return $sock;
+} // end function createSocketClient
 
 ?>
 
