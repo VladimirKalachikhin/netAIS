@@ -12,6 +12,7 @@ $path_parts = pathinfo(__FILE__); // определяем каталог скр�
 chdir($path_parts['dirname']); // задаем директорию выполнение скрипта
 
 require_once('fGPSD.php'); // fGPSD.php, там есть переменные, которые должны быть глобальным, поэтому здесь
+require_once('fcommon.php'); 	// 
 
 $sleepTime = 5;
 $greeting = '{"class":"VERSION","release":"netAISclient_1","rev":"5","proto_major":5,"proto_minor":1}'; 	// приветствие для gpsdPROXY
@@ -25,7 +26,6 @@ $netAISdevice = array(
 );
 //$serverPath = '/netAISserver.php';
 $serverPath = '/'; 	// ссылка названа index.php, и совместимость с SignalK версией. И вообще -- пусть имя сервера будет любым
-require('fcommon.php'); 	// 
 require('params.php'); 	// 
 $netAISJSONfilesDir = getAISdFilesNames($netAISJSONfilesDir); 	// определим имя и создадим каталог для данных netAIS
 
@@ -118,7 +118,7 @@ do {
 		do{
 			$gpsdPROXYsock = createSocketClient($netAISgpsdHost,$netAISgpsdPort); 	// Соединение с gpsdPROXY
 			if($gpsdPROXYsock === FALSE) { 	// клиент умер
-				echo "\nFailed to connect to gpsdPROXY by: " . socket_strerror(socket_last_error($gpsdPROXYsock)) . "\n";
+				echo "\nFailed to connect to gpsdPROXY\n";
 				break;
 			}
 			$msg = "?CONNECT;\n"; 	// ?CONNECT={"host":"","port":""};
@@ -260,12 +260,12 @@ foreach($vehicleInfo as $opt => $value) {
 
 function createSocketClient($host,$port){
 /* создаёт сокет, соединенный с $host,$port на другом компьютере */
-$sock = socket_create(AF_INET, SOCK_STREAM, SOL_TCP);
+$sock = @socket_create(AF_INET, SOCK_STREAM, SOL_TCP);
 if(!$sock) {
 	echo "Failed to create client socket by reason: " . socket_strerror(socket_last_error()) . "\n";
 	return FALSE;
 }
-if(! socket_connect($sock,$host,$port)){ 	// подключаемся к серверу
+if(! @socket_connect($sock,$host,$port)){ 	// подключаемся к серверу
 	echo "Failed to connect to remote server $host:$port by reason: " . socket_strerror(socket_last_error()) . "\n";
 	return FALSE;
 }
