@@ -237,7 +237,7 @@ if($TPV and (! isset($TPV['error']))) {
 	$vehicle['accuracy'] = $accuracy; 	// Position accuracy The position accuracy (PA) flag should be determined in accordance with Table 50 1 = high (£ 10 m) 0 = low (>10 m) 0 = default
 	$vehicle['lon'] = (float)$TPV['lon']; 	// Longitude in degrees
 	$vehicle['lat'] = (float)$TPV['lat']; 	// Latitude in degrees
-	$vehicle['course'] = (int)@$TPV['track']; 	// COG Course over ground in degrees ( 1/10 = (0-3 599). 3 600 (E10h) = not available = default. 3 601-4 095 should not be used)
+	$vehicle['course'] = (int)@$TPV['course']; 	// COG Course over ground in degrees ( 1/10 = (0-3 599). 3 600 (E10h) = not available = default. 3 601-4 095 should not be used)
 	if(!$vehicle['course']) (int)$vehicle['course'] = $TPV['heading'];
 	$vehicle['heading'] = $TPV['heading']; 	// True heading Degrees (0-359) (511 indicates not available = default)
 	$vehicle['timestamp'] = time();
