@@ -15,7 +15,7 @@ require_once('fGPSD.php'); // fGPSD.php, там есть переменные, �
 require_once('fcommon.php'); 	// 
 
 $sleepTime = 5;
-$greeting = '{"class":"VERSION","release":"netAISclient_1","rev":"5","proto_major":5,"proto_minor":2}'; 	// приветствие для gpsdPROXY
+$greeting = '{"class":"VERSION","release":"netAISclient","rev":"1","proto_major":5,"proto_minor":3}'; 	// приветствие для gpsdPROXY
 $SEEN_AIS = 0x08;
 $netAISdevice = array(
 'class' => 'DEVICE',

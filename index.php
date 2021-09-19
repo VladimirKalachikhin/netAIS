@@ -2,7 +2,7 @@
 $path_parts = pathinfo(__FILE__); // определяем каталог скрипта
 chdir($path_parts['dirname']); // задаем директорию выполнение скрипта
 
-$version = ' v.1.5.2';
+$version = ' v.1.5.3';
 /*
 1.5.2 work with SignalK
 1.5.1 work via gpsdPROXY simultaneously with saved data to file
@@ -148,7 +148,7 @@ elseif($_REQUEST['vehacleStatus'] or $_REQUEST['vehicleDescription'] or ($_REQUE
 	$status['status']=(int)$_REQUEST['vehacleStatus']; 	// 
 	$status['description']=$_REQUEST['vehicleDescription'];
 }
-elseif($_REQUEST['destinationCommonName'] or $_REQUEST['destinationETA']) { 	// 
+elseif($_REQUEST['destinationCommonName'] or ($_REQUEST['destinationCommonName'] === '') or $_REQUEST['destinationETA'] or ($_REQUEST['destinationETA']==='')) { 	// 
 	//echo "destinationCommonName={$_REQUEST['destinationCommonName']}; destinationETA={$_REQUEST['destinationETA']};<br>\n";
 	$status['destination']=$_REQUEST['destinationCommonName']; 	// 
 	$status['eta']=$_REQUEST['destinationETA'];
@@ -163,6 +163,7 @@ if($_REQUEST) { 	// возможно, были изменения
 	//echo "<pre>"; print_r($status); echo "</pre>\n";
 	file_put_contents($selfStatusFileName,serialize($status)); 	// сохраним статус
 }
+//echo "<pre>"; print_r($status); echo "</pre>\n";
 
 runClients(); 	// запустим\проверим клиентов для каждого сервера
 
