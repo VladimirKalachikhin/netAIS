@@ -16,12 +16,12 @@ $serversListFileName = 'server/serversList.csv'; 	// list of available servers
 
 //echo $_SERVER['PHP_SELF'];
 clearstatcache(TRUE,$selfStatusFileName); 	// from params.php
-if((time() - @filemtime($selfStatusFileName)) > $selfStatusTimeOut) $status = array(); 	// статус протух
+if(($selfStatusTimeOut !== 0) and ((time() - @filemtime($selfStatusFileName)) > $selfStatusTimeOut)) $status = array(); 	// статус протух
 else $status = unserialize(@file_get_contents($selfStatusFileName)); 	// считаем файл состояния
 if(!$status) {
 	$status = array();
-	$status[0]=15; 	// Navigational status 0 = under way using engine, 1 = at anchor, 2 = not under command, 3 = restricted maneuverability, 4 = constrained by her draught, 5 = moored, 6 = aground, 7 = engaged in fishing, 8 = under way sailing, 9 = reserved for future amendment of navigational status for ships carrying DG, HS, or MP, or IMO hazard or pollutant category C, high speed craft (HSC), 10 = reserved for future amendment of navigational status for ships carrying dangerous goods (DG), harmful substances (HS) or marine pollutants (MP), or IMO hazard or pollutant category A, wing in ground (WIG);11 = power-driven vessel towing astern (regional use), 12 = power-driven vessel pushing ahead or towing alongside (regional use); 13 = reserved for future use, 14 = AIS-SART (active), MOB-AIS, EPIRB-AIS 15 = undefined = default (also used by AIS-SART, MOB-AIS and EPIRB-AIS under test)
-	$status[1]='';
+	$status['status']=15; 	// Navigational status 0 = under way using engine, 1 = at anchor, 2 = not under command, 3 = restricted maneuverability, 4 = constrained by her draught, 5 = moored, 6 = aground, 7 = engaged in fishing, 8 = under way sailing, 9 = reserved for future amendment of navigational status for ships carrying DG, HS, or MP, or IMO hazard or pollutant category C, high speed craft (HSC), 10 = reserved for future amendment of navigational status for ships carrying dangerous goods (DG), harmful substances (HS) or marine pollutants (MP), or IMO hazard or pollutant category A, wing in ground (WIG);11 = power-driven vessel towing astern (regional use), 12 = power-driven vessel pushing ahead or towing alongside (regional use); 13 = reserved for future use, 14 = AIS-SART (active), MOB-AIS, EPIRB-AIS 15 = undefined = default (also used by AIS-SART, MOB-AIS and EPIRB-AIS under test)
+	$status['description']='';
 	$_REQUEST['statusUpdated'] = 1;
 }
 //echo "_REQUEST <pre>";print_r($_REQUEST);echo "</pre><br>\n";
@@ -145,8 +145,13 @@ elseif($_REQUEST['startClient']) { 	//
 // изменение статуса
 elseif($_REQUEST['vehacleStatus'] or $_REQUEST['vehicleDescription'] or ($_REQUEST['vehacleStatus']=='0')) { 	// 
 	//echo "vehacleStatus={$_REQUEST['vehacleStatus']}; vehicleDescription={$_REQUEST['vehicleDescription']};<br>\n";
-	$status[0]=(int)$_REQUEST['vehacleStatus']; 	// 
-	$status[1]=$_REQUEST['vehicleDescription'];
+	$status['status']=(int)$_REQUEST['vehacleStatus']; 	// 
+	$status['description']=$_REQUEST['vehicleDescription'];
+}
+elseif($_REQUEST['destinationCommonName'] or $_REQUEST['destinationETA']) { 	// 
+	//echo "destinationCommonName={$_REQUEST['destinationCommonName']}; destinationETA={$_REQUEST['destinationETA']};<br>\n";
+	$status['destination']=$_REQUEST['destinationCommonName']; 	// 
+	$status['eta']=$_REQUEST['destinationETA'];
 }
 
 if($_REQUEST) { 	// возможно, были изменения
@@ -299,28 +304,38 @@ else {
 </form>
 </div>
 <?php ?>
+<div 
+style='width:100%;border:1px solid black;border-radius:5px;'
+>
+<form  action='<?php echo $_SERVER['PHP_SELF'];?>' id='destination'
+style='margin:0.5rem 0 0.5rem 0;padding:0.5rem;width:47%;float:right';
+>
+	<input type='text' name='destinationCommonName' onchange="this.form.submit()" placeholder='<?php echo $vehicleDestinationPlaceholderTXT; ?>' size='17' style='font-size:120%;width:97%;margin:0.5rem' value='<?php echo $status['destination'];?>'><br>
+	<input type='datetime-local' name='destinationETA' onchange="this.form.submit()" placeholder='<?php echo $vehicleETAplaceholderTXT; ?>' size='17' style='font-size:120%;width:97%;margin:0.5rem' value='<?php echo $status['eta'];?>'>
+</form>
 <form  action='<?php echo $_SERVER['PHP_SELF'];?>' id='status'
-style='margin:0.5rem 0 0.5rem 0;padding:0.5rem;border:1px solid black;border-radius:5px;'
+style='margin:0.5rem;width:47%;'
 >
 <!--0 = under way using engine, 1 = at anchor, 2 = not under command, 3 = restricted maneuverability, 4 = constrained by her draught, 5 = moored, 6 = aground, 7 = engaged in fishing, 8 = under way sailing, 11 = power-driven vessel towing astern (regional use), 12 = power-driven vessel pushing ahead or towing alongside (regional use);  15 = undefined = default -->
 <!--0 = Двигаюсь под мотором, 1 = На якоре, 2 = Без экипажа, 3 = Ограничен в манёвре, 4 = Ограничен осадкой, 5 = Ошвартован, 6 = На мели, 7 = Занят ловлей рыбы, 8 = Двигаюсь под парусом, 11 = Тяну буксир (regional use), 12 = Толкаю состав или буксирую под бортом (regional use);  15 = неопределённое = default -->
 	<select name='vehacleStatus' onchange="this.form.submit()" size='1' style='width:100%;font-size:150%;text-align: center;'>
-		<option value='0' <?php if($status[0] == 0) echo "selected=1";?> ><?php echo $AISstatusTXT[0]; ?></option>
-		<option value='1' <?php if($status[0] == 1) echo "selected=1";?> ><?php echo $AISstatusTXT[1]; ?></option>
-		<option value='2' <?php if($status[0] == 2) echo "selected=1";?> ><?php echo $AISstatusTXT[2]; ?></option>
-		<option value='3' <?php if($status[0] == 3) echo "selected=1";?> ><?php echo $AISstatusTXT[3]; ?></option>
-		<option value='4' <?php if($status[0] == 4) echo "selected=1";?> ><?php echo $AISstatusTXT[4]; ?></option>
-		<option value='5' <?php if($status[0] == 5) echo "selected=1";?> ><?php echo $AISstatusTXT[5]; ?></option>
-		<option value='6' <?php if($status[0] == 6) echo "selected=1";?> ><?php echo $AISstatusTXT[6]; ?></option>
-		<option value='7' <?php if($status[0] == 7) echo "selected=1";?> ><?php echo $AISstatusTXT[7]; ?></option>
-		<option value='8' <?php if($status[0] == 8) echo "selected=1";?> ><?php echo $AISstatusTXT[8]; ?></option>
-		<option value='11' <?php if($status[0] == 11) echo "selected=1";?> ><?php echo $AISstatusTXT[11]; ?></option>
-		<option value='12' <?php if($status[0] == 12) echo "selected=1";?> ><?php echo $AISstatusTXT[12]; ?></option>
-		<option value='15' <?php if($status[0] == 15) echo "selected=1";?> ><?php echo $AISstatusTXT[15]; ?></option>
+		<option value='0' <?php if($status['status'] == 0) echo "selected=1";?> ><?php echo $AISstatusTXT[0]; ?></option>
+		<option value='1' <?php if($status['status'] == 1) echo "selected=1";?> ><?php echo $AISstatusTXT[1]; ?></option>
+		<option value='2' <?php if($status['status'] == 2) echo "selected=1";?> ><?php echo $AISstatusTXT[2]; ?></option>
+		<option value='3' <?php if($status['status'] == 3) echo "selected=1";?> ><?php echo $AISstatusTXT[3]; ?></option>
+		<option value='4' <?php if($status['status'] == 4) echo "selected=1";?> ><?php echo $AISstatusTXT[4]; ?></option>
+		<option value='5' <?php if($status['status'] == 5) echo "selected=1";?> ><?php echo $AISstatusTXT[5]; ?></option>
+		<option value='6' <?php if($status['status'] == 6) echo "selected=1";?> ><?php echo $AISstatusTXT[6]; ?></option>
+		<option value='7' <?php if($status['status'] == 7) echo "selected=1";?> ><?php echo $AISstatusTXT[7]; ?></option>
+		<option value='8' <?php if($status['status'] == 8) echo "selected=1";?> ><?php echo $AISstatusTXT[8]; ?></option>
+		<option value='11' <?php if($status['status'] == 11) echo "selected=1";?> ><?php echo $AISstatusTXT[11]; ?></option>
+		<option value='12' <?php if($status['status'] == 12) echo "selected=1";?> ><?php echo $AISstatusTXT[12]; ?></option>
+		<option value='15' <?php if($status['status'] == 15) echo "selected=1";?> ><?php echo $AISstatusTXT[15]; ?></option>
 	</select><br>
-	<textarea name='vehicleDescription' onchange="this.form.submit()" placeholder='<?php echo $vehicleDescrPlaceholderTXT; ?>' rows=3 style='width:99%;font-size:75%;padding:0.5rem;'>
-<?php echo $status[1];?></textarea>
+	<textarea name='vehicleDescription' onchange="this.form.submit()" placeholder='<?php echo $vehicleDescrPlaceholderTXT; ?>' rows=3 style='width:98%;font-size:75%;margin:0.5rem 0;padding:0.5rem;'>
+<?php echo $status['description'];?></textarea>
 </form>
+</div>
 </div>
 </body>
 </html>

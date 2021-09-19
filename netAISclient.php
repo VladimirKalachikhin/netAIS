@@ -15,7 +15,7 @@ require_once('fGPSD.php'); // fGPSD.php, там есть переменные, �
 require_once('fcommon.php'); 	// 
 
 $sleepTime = 5;
-$greeting = '{"class":"VERSION","release":"netAISclient_1","rev":"5","proto_major":5,"proto_minor":1}'; 	// приветствие для gpsdPROXY
+$greeting = '{"class":"VERSION","release":"netAISclient_1","rev":"5","proto_major":5,"proto_minor":2}'; 	// приветствие для gpsdPROXY
 $SEEN_AIS = 0x08;
 $netAISdevice = array(
 'class' => 'DEVICE',
@@ -44,6 +44,10 @@ if(IRun($netAISserverURI)) { 	// Я ли?
 $netAISJSONfileName = $netAISJSONfilesDir.$netAISserverURI;
 if(substr($netAISserverURI,-6) == '.onion') $netAISserverURI .= $serverPath;
 $spatialProvider = NULL; 	// строка идентификации источника координат
+// start gpsdPROXY
+if($gpsdPROXYname){
+	exec("$phpCLIexec $gpsdPROXYname > /dev/null 2>&1 &");
+}
 
 $vehicle = getSelfParms(); 	// базовая информация о себе
 do {
@@ -222,12 +226,16 @@ if($selfStatusTimeOut and ((time() - filemtime($selfStatusFileName)) > $selfStat
 else $status = unserialize(@file_get_contents($selfStatusFileName)); 	// считаем файл состояния, которого может не быть
 if(!$status) {
 	$status = array();
-	$status[0]=15; 	// Navigational status 0 = under way using engine, 1 = at anchor, 2 = not under command, 3 = restricted maneuverability, 4 = constrained by her draught, 5 = moored, 6 = aground, 7 = engaged in fishing, 8 = under way sailing, 9 = reserved for future amendment of navigational status for ships carrying DG, HS, or MP, or IMO hazard or pollutant category C, high speed craft (HSC), 10 = reserved for future amendment of navigational status for ships carrying dangerous goods (DG), harmful substances (HS) or marine pollutants (MP), or IMO hazard or pollutant category A, wing in ground (WIG);11 = power-driven vessel towing astern (regional use), 12 = power-driven vessel pushing ahead or towing alongside (regional use); 13 = reserved for future use, 14 = AIS-SART (active), MOB-AIS, EPIRB-AIS 15 = undefined = default (also used by AIS-SART, MOB-AIS and EPIRB-AIS under test)
-	$status[1]='';
+	$status['status']=15; 	// Navigational status 0 = under way using engine, 1 = at anchor, 2 = not under command, 3 = restricted maneuverability, 4 = constrained by her draught, 5 = moored, 6 = aground, 7 = engaged in fishing, 8 = under way sailing, 9 = reserved for future amendment of navigational status for ships carrying DG, HS, or MP, or IMO hazard or pollutant category C, high speed craft (HSC), 10 = reserved for future amendment of navigational status for ships carrying dangerous goods (DG), harmful substances (HS) or marine pollutants (MP), or IMO hazard or pollutant category A, wing in ground (WIG);11 = power-driven vessel towing astern (regional use), 12 = power-driven vessel pushing ahead or towing alongside (regional use); 13 = reserved for future use, 14 = AIS-SART (active), MOB-AIS, EPIRB-AIS 15 = undefined = default (also used by AIS-SART, MOB-AIS and EPIRB-AIS under test)
+	$status['description']='';
+	$status['destination']=''; 	// 
+	$status['eta']='';
 }
 //echo "status: <pre>"; print_r($status);echo "</pre>\n";
-$vehicle['status'] = (int)$status[0]; 	// Navigational status 0 = under way using engine, 1 = at anchor, 2 = not under command, 3 = restricted maneuverability, 4 = constrained by her draught, 5 = moored, 6 = aground, 7 = engaged in fishing, 8 = under way sailing, 9 = reserved for future amendment of navigational status for ships carrying DG, HS, or MP, or IMO hazard or pollutant category C, high speed craft (HSC), 10 = reserved for future amendment of navigational status for ships carrying dangerous goods (DG), harmful substances (HS) or marine pollutants (MP), or IMO hazard or pollutant category A, wing in ground (WIG);11 = power-driven vessel towing astern (regional use), 12 = power-driven vessel pushing ahead or towing alongside (regional use); 13 = reserved for future use, 14 = AIS-SART (active), MOB-AIS, EPIRB-AIS 15 = undefined = default (also used by AIS-SART, MOB-AIS and EPIRB-AIS under test)
-$vehicle['status_text'] = $status[1];
+$vehicle['status'] = (int)$status['status']; 	// Navigational status 0 = under way using engine, 1 = at anchor, 2 = not under command, 3 = restricted maneuverability, 4 = constrained by her draught, 5 = moored, 6 = aground, 7 = engaged in fishing, 8 = under way sailing, 9 = reserved for future amendment of navigational status for ships carrying DG, HS, or MP, or IMO hazard or pollutant category C, high speed craft (HSC), 10 = reserved for future amendment of navigational status for ships carrying dangerous goods (DG), harmful substances (HS) or marine pollutants (MP), or IMO hazard or pollutant category A, wing in ground (WIG);11 = power-driven vessel towing astern (regional use), 12 = power-driven vessel pushing ahead or towing alongside (regional use); 13 = reserved for future use, 14 = AIS-SART (active), MOB-AIS, EPIRB-AIS 15 = undefined = default (also used by AIS-SART, MOB-AIS and EPIRB-AIS under test)
+$vehicle['status_text'] = $status['description'];
+$vehicle['destination'] = $status['destination'];
+$vehicle['eta'] = $status['eta'];
 $TPV = getPosAndInfo($host,$netAISgpsdPort); 	// fGPSD.php
 //echo "TPV:";print_r($TPV);echo "\n";
 if($TPV and (! isset($TPV['error']))) {
@@ -240,6 +248,7 @@ if($TPV and (! isset($TPV['error']))) {
 	$vehicle['course'] = (int)@$TPV['course']; 	// COG Course over ground in degrees ( 1/10 = (0-3 599). 3 600 (E10h) = not available = default. 3 601-4 095 should not be used)
 	if(!$vehicle['course']) (int)$vehicle['course'] = $TPV['heading'];
 	$vehicle['heading'] = $TPV['heading']; 	// True heading Degrees (0-359) (511 indicates not available = default)
+	if(!$vehicle['heading']) $vehicle['heading'] = $vehicle['course'];
 	$vehicle['timestamp'] = time();
 	return TRUE;
 }

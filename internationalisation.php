@@ -15,6 +15,9 @@ if(strpos($_SERVER['HTTP_ACCEPT_LANGUAGE'],'ru')===FALSE) { 	// клиент - �
 	$serverPlaceholderTXT = 'Required! .onion address';
 	$serverNamePlaceholderTXT = 'Clear name';
 	$serverDescrPlaceholderTXT = 'Short description';
+	
+	$vehicleDestinationPlaceholderTXT = 'Destination common name';
+	$vehicleETAplaceholderTXT = 'Estimated time of arrival';
 
 	$AISstatusTXT = array(
 	0=>'under way using engine',
@@ -47,6 +50,9 @@ else {
 	$serverPlaceholderTXT = 'Нужно! .onion адрес';
 	$serverNamePlaceholderTXT = 'Понятное наименование';
 	$serverDescrPlaceholderTXT = 'Краткое описание';
+	
+	$vehicleDestinationPlaceholderTXT = 'Куда';
+	$vehicleETAplaceholderTXT = 'Время прибытия';
 	
 	$AISstatusTXT = array(
 	0=>'Двигаюсь под мотором',
