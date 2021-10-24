@@ -2,7 +2,7 @@
 $path_parts = pathinfo(__FILE__); // определяем каталог скрипта
 chdir($path_parts['dirname']); // задаем директорию выполнение скрипта
 
-$version = ' v.1.5.3';
+$version = ' v.1.5.4';
 /*
 1.5.2 work with SignalK
 1.5.1 work via gpsdPROXY simultaneously with saved data to file
@@ -71,18 +71,7 @@ elseif($_REQUEST['startServer']) {
 	@unlink('server/index.php'); 	// 
 	$serverOn = FALSE;
 	if($torRun and $onion) {
-		//exec('ln -sr netAISserver.php server/netAISserver.php'); 	// symlink() не умеет относительные ссылки, и нужен полный путь
-		// но, однако, busybox не умеет ln -sr, поэтому создаём относительную ссылку через жопу:
-		chdir('server');
-		symlink('../netAISserver.php','netAISserver.php'); 	// для совместимости со старыми версиями
-		symlink('../netAISserver.php','index.php');
-		chdir('..');
-		//echo readlink('server/netAISserver.php');
-		// Определим включённость сервера
-		//clearstatcache(TRUE,'server/netAISserver.php');
-		//$serverOn = file_exists('server/netAISserver.php');
-		clearstatcache(TRUE,'server/index.php');
-		$serverOn = file_exists('server/index.php');
+		$serverOn = serverStart();
 		if($serverOn) {
 			if(!$servers[$onion]) $servers[$onion] = array($onion,0,$onion,$myGroupNameTXT);
 			$servers[$onion][1] = 1; 	// укажем, что клиент к своему серверу должен быть запущен
@@ -122,16 +111,7 @@ elseif($_REQUEST['startClient']) { 	//
 	if($_REQUEST['server'] == $onion) { 	// указан клиент к своему серверу
 		if(!$serverOn) { 	// сервер сейчас не запущен
 			if($torRun and $onion) {
-				//exec('ln -sr netAISserver.php server/netAISserver.php'); 	// symlink() не умеет относительные ссылки, и нужен полный путь
-				//echo readlink('server/netAISserver.php');
-				// но, однако, busybox не умеет ln -sr, поэтому создаём относительную ссылку через жопу:
-				chdir('server');
-				symlink('../netAISserver.php','netAISserver.php');
-				chdir('..');
-				//echo readlink('server/netAISserver.php');
-				// Определим включённость сервера
-				clearstatcache(TRUE,'server/netAISserver.php');
-				$serverOn = file_exists('server/netAISserver.php');
+				$serverOn = serverStart();
 				if(!$serverOn) $str = $serverErrTXT2;
 			}
 			else  {
@@ -201,7 +181,7 @@ infoBox.innerText='width: '+window.innerWidth+' height: '+window.innerHeight;
 </script>
 <?php */ ?>
 <div style = '
-	width:99%;
+	width:95%;
 	margin:0; padding:0;
 	position: absolute;
 	top: 50%;
@@ -394,5 +374,23 @@ foreach($psList as $str) {
 	}
 }
 } // end function killClient
+
+function serverStart(){
+//exec('ln -sr netAISserver.php server/netAISserver.php'); 	// symlink() не умеет относительные ссылки, и нужен полный путь
+//echo readlink('server/netAISserver.php');
+// но, однако, busybox не умеет ln -sr, поэтому создаём относительную ссылку через жопу:
+//$serverName = 'netAISserver.php';
+$serverName = 'index.php';
+chdir('server');
+@unlink('netAISserver.php');
+@unlink('index.php');
+symlink('../netAISserver.php',$serverName);
+chdir('..');
+//echo readlink("server/$serverName");
+// Определим включённость сервера
+clearstatcache(TRUE,"server/$serverName");
+$serverOn = file_exists("server/$serverName");
+return $serverOn;
+} // end function serverStart
 ?>
 
