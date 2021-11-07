@@ -163,8 +163,12 @@ do {
 			$msg = json_encode(array('class'=>'netAIS','device'=>$netAISdevice['path'],'data'=>$aisData));
 			$msg .= "\n";
 			$res = socket_write($gpsdPROXYsock, $msg, strlen($msg)); 	// шлём данные
-			socket_close($gpsdPROXYsock);
+			if($res === FALSE) { 	// клиент умер
+				echo "\nFailed to write data to gpsdPROXY socket by: " . socket_strerror(socket_last_error($gpsdPROXYsock)) . "\n";
+				break;
+			}
 		}while(FALSE);
+		//socket_close($gpsdPROXYsock);	// если закрыть сокет -- на той стороне могут не успеть принять. Однако, если не закрывать, createSocketClient, вроде бы, использует уже открытый сокет, а не открывает новый. Это правильно?
 	}
 	file_put_contents($netAISJSONfileName,json_encode($aisData)); 	// 
 	@chmod($netAISJSONfileName,0666); 	// если файла не было
