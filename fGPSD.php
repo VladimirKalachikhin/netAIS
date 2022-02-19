@@ -21,17 +21,19 @@ if(($res === FALSE) or !$gpsd) return "no GPSD: $errstr";
 $controlClasses = array('VERSION','DEVICES','DEVICE','WATCH');
 $WATCHsend = FALSE; $POLLsend = FALSE;
 do { 	// при каскадном соединении нескольких gpsd заголовков может быть много
-	$buf = fgets($gpsd); 
-	//echo "<br>buf:<br>|".strtr($buf,"\r\n",'?!')."|<br>\n";
-	if($buf === FALSE) { 	// gpsd умер
-	    @socket_close($gpsd);
-		$msg = "Failed to read data from gpsd";
-		echo "$msg<br>\n"; 
-		return $msg;
-	}
-	if (!$buf = trim($buf)) {	// пусто -- это второй \r\n в конце строки. Но пустая строка -- как бы принятое в http завершение сообщения?
-		continue;
-	}
+	$zeroCount = 0;	// счётчик пустых строк
+	do {	// крутиться до принятия строки или до 10 пустых строк
+		$buf = fgets($gpsd); 
+		//echo "<br>buf:<br>|".strtr($buf,"\r\n",'?!')."|<br>\n";
+		if($buf === FALSE) { 	// gpsd умер
+			@socket_close($gpsd);
+			$msg = "Failed to read data from gpsd";
+			echo "$msg<br>\n"; 
+			return $msg;
+		}
+		$buf = trim($buf);
+		if(!$buf) $zeroCount++;
+	}while(!$buf and $zeroCount<10);
 	$buf = json_decode($buf,TRUE);
 	if($buf === null) { 	// прислали странное, это не gpsd?
 	    @socket_close($gpsd);

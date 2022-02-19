@@ -49,12 +49,12 @@ if($gpsdPROXYname){
 	exec("$phpCLIexec $gpsdPROXYname > /dev/null 2>&1 &");
 }
 
-$vehicle = getSelfParms(); 	// базовая информация о себе
+$vehicle = getSelfParms(); 	// базовая информация о себе: название, позывные, etc
 $connected = FALSE;
 do {
 	clearstatcache(TRUE,$selfStatusFileName); 	// from params.php
 	if($selfStatusTimeOut and ((time() - filemtime($selfStatusFileName)) > $selfStatusTimeOut)) { 	// статус протух. Статус меняется в интерфейсе. Если его долго не дёргать (сутки по умолчанию) -- передача статуса прекращается. И приём, соответственно.
-		error_log("exchange spatial info stopped by the inactive user reason");
+		echo "exchange spatial info stopped by the inactive user reason";
 		break;
 	}
 
@@ -93,7 +93,6 @@ do {
 	// Там я тоже, поэтому удалим
 	unset($netAISdata[$vehicle['mmsi']]); 
 	//echo "Recieved without me: ";print_r($netAISdata);
-	//echo "aisData from file: "; print_r($aisData);
 
 	END:
 	// Возьмём файл с целями netAIS
@@ -106,99 +105,98 @@ do {
 		echo "no netAIS targets, $netAISJSONfileName don't exist, try to create new \n";
 		$aisData = array();
 	}
-	//print_r($aisData);
+	//echo "aisData from file: "; print_r($aisData);
 	// Почистим общий файл от старых целей. Нормально это делает сервер, но связи с сервером может не быть
 	$now = time();
 	foreach($aisData as $veh => &$data) {
 		if(($now-$data['timestamp'])>$noVehicleTimeout) unset($aisData[$veh]);
 	}
-	//echo "aisData before writing: <pre>"; print_r($aisData);echo "</pre>\n";
 	// запишем свежее в общий файл
 	foreach($netAISdata as $veh) {
 		updAISdata($veh); 	
 	}
+	//echo "aisData before writing: <pre>"; print_r($aisData);echo "</pre>\n";
 	// зальём обратно
 	//echo "spatialProvider=$spatialProvider;\n";
 	if(strpos($spatialProvider,'gpsdPROXY')!==FALSE) { 	//
-		do{		// это типа так go to, потому что этот цикл проворачивается только один раз
-			if(!$connected) $gpsdPROXYsock = createSocketClient($netAISgpsdHost,$netAISgpsdPort); 	// Соединение с gpsdPROXY
+		if(!$connected) {
+			$gpsdPROXYsock = createSocketClient($netAISgpsdHost,$netAISgpsdPort); 	// Соединение с gpsdPROXY
 			if($gpsdPROXYsock === FALSE) { 	// клиент умер
 				$connected = FALSE;
 				echo "\nFailed to connect to gpsdPROXY\n";
 				break;
 			}
-			if(!$connected){
-				$msg = "?CONNECT;\n"; 	// ?CONNECT={"host":"","port":""};
-				//echo "Send CONNECT\n";
-				$res = socket_write($gpsdPROXYsock, $msg, strlen($msg)); 	// шлём команду подключиться к нам как к gpsd
-				if($res === FALSE) { 	// клиент умер
-					socket_close($gpsdPROXYsock);	// 
+			$res = socket_write($gpsdPROXYsock, "\n\n", 2);	// gpsgPROXY не вернёт greeting, если не получит что-то. Ну, так получилось
+			$buf = socket_read($gpsdPROXYsock, 2048, PHP_NORMAL_READ); 	// читаем VERSION, PHP_NORMAL_READ -- ждать \n
+			//echo "buf: |$buf|\n";
+
+			$msg = "?CONNECT;\n"; 	// ?CONNECT={"host":"","port":""};
+			//echo "Send CONNECT\n";
+			$res = socket_write($gpsdPROXYsock, $msg, strlen($msg)); 	// шлём команду подключиться к нам как к gpsd
+			// handshaking as some gpsd
+			$msg = "$greeting\n"; 	// 
+			//echo "Send greeting\n";
+			$res = socket_write($gpsdPROXYsock, $msg, strlen($msg)); 	// шлём приветствие
+			$zeroCount = 0;	// счётчик пустых строк
+			do{		// 
+				$buf = socket_read($gpsdPROXYsock, 2048, PHP_NORMAL_READ); 	// PHP_NORMAL_READ -- ждать \n
+				//echo "buf: |$buf|\n";
+				if($buf === FALSE) {
 					$connected = FALSE;
-					echo "\nFailed to write ?CONNECT to gpsdPROXY socket by: " . socket_strerror(socket_last_error($gpsdPROXYsock)) . "\n";
+					echo "\nBroke socket $gpsdPROXYsock during handshaking \n";
 					break;
 				}
-				// handshaking as some gpsd
-				$msg = "$greeting\n"; 	// 
-				//echo "Send greeting\n";
-				$res = socket_write($gpsdPROXYsock, $msg, strlen($msg)); 	// шлём приветствие
-				if($res === FALSE) { 	// клиент умер
-					socket_close($gpsdPROXYsock);	// 
-					$connected = FALSE;
-					echo "\nFailed to write VERSION to gpsdPROXY socket by: " . socket_strerror(socket_last_error($gpsdPROXYsock)) . "\n";
-					break;
+				if(!$buf=trim($buf)) {	// пустые строки
+					$zeroCount++;
+					continue;
 				}
-				$buf = '';
-				$buf = socket_read($gpsdPROXYsock, 2048, PHP_NORMAL_READ); 	// читаем WATCH, PHP_NORMAL_READ -- ждать \n
-				//echo "|$buf|\n";
-				if($buf === FALSE) { 	// клиент умер
-					socket_close($gpsdPROXYsock);	// 
-					$connected = FALSE;
-					echo "\nFailed to read WATCH to gpsdPROXY socket by: " . socket_strerror(socket_last_error($gpsdPROXYsock)) . "\n";
-					break;
+				if($buf[0]!='?') { 	// это не команда протокола gpsd
+					$zeroCount++;
+					continue;
 				}
-				$msg = json_encode(array('class' => 'DEVICES', 'devices' => array($netAISdevice)));
-				$msg .= "\n";
-				//echo "Send DEVICES\n";
-				$res = socket_write($gpsdPROXYsock, $msg, strlen($msg)); 	// шлём DEVICES
-				if($res === FALSE) { 	// клиент умер
-					socket_close($gpsdPROXYsock);	// 
-					$connected = FALSE;
-					echo "\nFailed to write DEVICES to gpsdPROXY socket by: " . socket_strerror(socket_last_error($gpsdPROXYsock)) . "\n";
-					break;
-				}
-				$msg = '{"class":"WATCH","enable":true,"json":true,"nmea":false,"raw":0,"scaled":true,"split24":true,"timing":false,"pps":false,"device":"'.$netAISdevice['path'].'","remote":"'.$netAISdevice['path'].'.php"}';
-				$msg .= "\n";
-				//echo "Send WATCH\n";
-				$res = socket_write($gpsdPROXYsock, $msg, strlen($msg)); 	// шлём WATCH
-				if($res === FALSE) { 	// клиент умер
-					socket_close($gpsdPROXYsock);	// 
-					$connected = FALSE;
-					echo "\nFailed to write WATCH to gpsdPROXY socket by: " . socket_strerror(socket_last_error($gpsdPROXYsock)) . "\n";
+				$buf = rtrim(substr($buf,1),';');	// ? ;
+				list($command,$params) = explode('=',$buf);
+				$params = trim($params);
+				//echo "\nClient command=$command; params=$params;\n";
+				if($params) $params = json_decode($params,TRUE);
+				switch($command){
+				case 'WATCH':
+					$msg = json_encode(array('class' => 'DEVICES', 'devices' => array($netAISdevice)));
+					$msg .= "\n";
+					//echo "Send DEVICES $msg \n";
+					$res = socket_write($gpsdPROXYsock, $msg, strlen($msg)); 	// шлём DEVICES
+	
+					$msg = '{"class":"WATCH","enable":true,"json":true,"nmea":false,"raw":0,"scaled":true,"split24":true,"timing":false,"pps":false,"device":"'.$netAISdevice['path'].'","remote":"'.$netAISdevice['path'].'.php"}';
+					$msg .= "\n";
+					//echo "Send WATCH\n";
+					$res = socket_write($gpsdPROXYsock, $msg, strlen($msg)); 	// шлём WATCH
 					break;
 				}
 				$connected = TRUE;
-			}
-			// handshaking success, will send data
-			//echo "aisData before send to gpsdPROXY: <pre>"; print_r($aisData);echo "</pre>\n";
+				break;
+			}while($zeroCount<10);
+		}
+		if($connected) {
+			//echo "handshaking as gpsd success, will send data\n";
+			//echo "aisData before send to gpsdPROXY: >"; print_r($aisData);
 			$msg = json_encode(array('class'=>'netAIS','device'=>$netAISdevice['path'],'data'=>$aisData));
 			$msg .= "\n";
-			$res = socket_write($gpsdPROXYsock, $msg, strlen($msg)); 	// шлём данные
+			$res = @socket_write($gpsdPROXYsock, $msg, strlen($msg)); 	// шлём данные
 			if($res === FALSE) { 	// клиент умер
 				socket_close($gpsdPROXYsock);	// 
 				$connected = FALSE;
-				echo "\nFailed to write data to gpsdPROXY socket by: " . socket_strerror(socket_last_error($gpsdPROXYsock)) . "\n";
+				echo "\nFailed to write data to gpsdPROXY socket by: " . @socket_strerror(socket_last_error($gpsdPROXYsock)) . "\n";
 				break;
 			}
-		}while(FALSE);
-		//socket_close($gpsdPROXYsock);	// если закрыть сокет -- на той стороне могут не успеть принять. Однако, если не закрывать, createSocketClient, вроде бы, использует уже открытый сокет, а не открывает новый. Это правильно? Нет, не использует. Надо явро.
+		}
 	}
-	file_put_contents($netAISJSONfileName,json_encode($aisData)); 	// 
+	file_put_contents($netAISJSONfileName,json_encode($aisData)); 	// собственно, заливание данных 
 	@chmod($netAISJSONfileName,0666); 	// если файла не было
 	clearstatcache(TRUE,$netAISJSONfileName);
 	
 	sleep($sleepTime);
 } while(1);
-socket_close($gpsdPROXYsock);	// 
+@socket_close($gpsdPROXYsock);	// 
 unlink($netAISJSONfileName); 	// если netAIS выключен -- файл с целями должен быть удалён, иначе эти цели будут показываться вечно
 return;
 
@@ -263,7 +261,8 @@ $vehicle['status'] = (int)$status['status']; 	// Navigational status 0 = under w
 $vehicle['status_text'] = $status['description'];
 $vehicle['destination'] = $status['destination'];
 $vehicle['eta'] = $status['eta'];
-$TPV = getPosAndInfo($host,$netAISgpsdPort); 	// fGPSD.php
+//echo "Координаты от $host:$netAISgpsdPort;\n";
+$TPV = getPosAndInfo($host,$netAISgpsdPort); 	// fGPSD.php, там понимают массив в адресе
 //echo "TPV:";print_r($TPV);echo "\n";
 if($TPV and (! isset($TPV['error']))) {
 	$vehicle['speed'] = (float)$TPV['speed']; 	// SOG Speed over ground in m/sec
@@ -279,8 +278,10 @@ if($TPV and (! isset($TPV['error']))) {
 	$vehicle['timestamp'] = time();
 	return TRUE;
 }
-else echo "Get TPV error:".$TPV['error']."\n";
+else {
+	echo "Get TPV error:".$TPV['error']."\n";
 	return FALSE;
+}
 } // end function updSelf
 
 function updAISdata($vehicleInfo) {
@@ -305,8 +306,7 @@ if(! @socket_connect($sock,$host,$port)){ 	// подключаемся к сер
 	echo "Failed to connect to remote server $host:$port by reason: " . socket_strerror(socket_last_error()) . "\n";
 	return FALSE;
 }
-//echo "Connected to $host:$port!\n";
-//$res = socket_write($socket, "\n");
+echo "Connected to $host:$port \n";
 return $sock;
 } // end function createSocketClient
 
