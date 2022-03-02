@@ -2,7 +2,7 @@
 $path_parts = pathinfo(__FILE__); // определяем каталог скрипта
 chdir($path_parts['dirname']); // задаем директорию выполнение скрипта
 
-$version = ' v.1.5.5';
+$version = ' v.1.5.6';
 /*
 1.5.2 work with SignalK
 1.5.1 work via gpsdPROXY simultaneously with saved data to file
@@ -329,7 +329,9 @@ function runClients() {
 global $servers,$phpCLIexec,$netAISdHost,$netAISdPort,$netAISJSONfilesDir;
 $oneClientRun = 0;
 foreach($servers as $uri => $server) {
+	if(is_int($url)) continue; 	// строки - комментарии
 	if($server[1]) { 	// запустим, он проверяет сам, запущен ли
+		//echo "Запускаем netAISclient для сервера {$server[2]}<br>\n";
 		exec("$phpCLIexec netAISclient.php -s$uri > /dev/null 2>&1 & echo $!",$psList); 	// exec не будет ждать завершения: & - daemonise; echo $! - return daemon's PID
 		$oneClientRun += 1;
 		// Запустим сервер сообщений AIS для тупых
@@ -368,6 +370,7 @@ foreach($psList as $str) {
 		case 'bash': 	// если встретилось это слово -- это не та строка
 			break 2;
 		case $phpCLIexec:
+			//echo "Убиваем процесс $pid\n";
 			$ret = exec("kill $pid"); 	// exec будет ждать завершения
 			break 3;
 		}

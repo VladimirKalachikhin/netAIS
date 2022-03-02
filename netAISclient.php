@@ -59,7 +59,15 @@ do {
 	}
 
 	$netAISdata = array();
-	if(!updSelf($vehicle)) goto END;  	// запишем свежую информацию о себе, если там нет координат -- упс.
+	if(!updSelf($vehicle)) {  	// запишем свежую информацию о себе, если там нет координат -- упс.
+		echo "\nFailed to update self info - no gpsd? \n";
+		if($gpsdPROXYname){	// start gpsdPROXY
+			echo "try to start gpsdPROXY $phpCLIexec $gpsdPROXYname\n";
+			exec("$phpCLIexec $gpsdPROXYname > /dev/null 2>&1 &");
+			goto END;	// будем пытаться вечно запустить gpsdPROXY
+		}
+		else break;
+	}
 	//echo "vehicle: "; print_r($vehicle);
 	$vehicleJSON = json_encode($vehicle);
 	$uri = "$netAISserverURI?member=".urlencode($vehicleJSON);
@@ -94,7 +102,6 @@ do {
 	unset($netAISdata[$vehicle['mmsi']]); 
 	//echo "Recieved without me: ";print_r($netAISdata);
 
-	END:
 	// Возьмём файл с целями netAIS
 	//echo "netAISJSONfileName=$netAISJSONfileName;\n";
 	clearstatcache(TRUE,$netAISJSONfileName);
@@ -123,8 +130,13 @@ do {
 			$gpsdPROXYsock = createSocketClient($netAISgpsdHost,$netAISgpsdPort); 	// Соединение с gpsdPROXY
 			if($gpsdPROXYsock === FALSE) { 	// клиент умер
 				$connected = FALSE;
-				echo "\nFailed to connect to gpsdPROXY\n";
-				break;
+				echo "\nFailed to connect to gpsd \n";
+				if($gpsdPROXYname){	// start gpsdPROXY
+					echo "try to connect to gpsdPROXY \n";
+					exec("$phpCLIexec $gpsdPROXYname > /dev/null 2>&1 &");
+					goto END;	// будем пытаться вечно запустить gpsdPROXY
+				}
+				else break;
 			}
 			$res = socket_write($gpsdPROXYsock, "\n\n", 2);	// gpsgPROXY не вернёт greeting, если не получит что-то. Ну, так получилось
 			$buf = socket_read($gpsdPROXYsock, 2048, PHP_NORMAL_READ); 	// читаем VERSION, PHP_NORMAL_READ -- ждать \n
@@ -194,6 +206,7 @@ do {
 	@chmod($netAISJSONfileName,0666); 	// если файла не было
 	clearstatcache(TRUE,$netAISJSONfileName);
 	
+	END:
 	sleep($sleepTime);
 } while(1);
 @socket_close($gpsdPROXYsock);	// 
