@@ -2,7 +2,7 @@
 $path_parts = pathinfo(__FILE__); // определяем каталог скрипта
 chdir($path_parts['dirname']); // задаем директорию выполнение скрипта
 
-$version = ' v.1.5.6';
+$version = ' v.1.5.7';
 /*
 1.5.2 work with SignalK
 1.5.1 work via gpsdPROXY simultaneously with saved data to file

@@ -198,7 +198,10 @@ do {
 				socket_close($gpsdPROXYsock);	// 
 				$connected = FALSE;
 				echo "\nFailed to write data to gpsdPROXY socket by: " . @socket_strerror(socket_last_error($gpsdPROXYsock)) . "\n";
-				break;
+				//break;
+				echo "try to start gpsdPROXY $phpCLIexec $gpsdPROXYname\n";
+				exec("$phpCLIexec $gpsdPROXYname > /dev/null 2>&1 &");
+				goto END;	// будем пытаться вечно запустить gpsdPROXY
 			}
 		}
 	}
