@@ -100,6 +100,8 @@ Web interface optimised to mobile and/or e-Inc devices, old ones including.
 * [Metrize Icons by Alessio Atzeni](https://icon-icons.com/pack/Metrize-Icons/1130) for icons.
 
 ## Support
-[Discussions](https://github.com/VladimirKalachikhin/netAIS/discussions)
+[Discussions](https://github.com/VladimirKalachikhin/Galadriel-map/discussions)
 
-You can get support for netAIS software for a beer [via PayPal](https://paypal.me/VladimirKalachikhin) or [YandexMoney](https://yasobe.ru/na/galadrielmap) at [galadrielmap@gmail.com](mailto:galadrielmap@gmail.com)  
+The forum will be more lively if you make a donation [via PayPal](https://paypal.me/VladimirKalachikhin)  at [galadrielmap@gmail.com](mailto:galadrielmap@gmail.com) or at [ЮMoney](https://yasobe.ru/na/galadrielmap)
+
+[Paid personal consalting](https://kwork.ru/it-support/20093939/galadrielmap-installation-configuration-and-usage-consulting)  
