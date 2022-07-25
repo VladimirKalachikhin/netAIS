@@ -44,7 +44,7 @@ if(IRun($netAISserverURI)) { 	// Я ли?
 $netAISJSONfileName = $netAISJSONfilesDir.$netAISserverURI;
 if(substr($netAISserverURI,-6) == '.onion') $netAISserverURI .= $serverPath;
 $spatialProvider = NULL; 	// строка идентификации источника координат
-/* Оказалось, что дочерний процесс тоже убивается при смерте родительского. Я полагал, что при & -- нет.
+/* Оказалось, что дочерний процесс тоже убивается при смерте родительского. Я полагал, что при & -- нет. Чтобы не убивался, нужно nohup command &
 В результате при самоубийстве netAISclient по неактивности юзера будет убит gpsdPROXY, если 
 он был запущен отсюда.
 // start gpsdPROXY
@@ -63,7 +63,7 @@ do {
 
 	$netAISdata = array();
 	if(!updSelf($vehicle)) {  	// запишем свежую информацию о себе, если там нет координат -- упс.
-		echo "\nFailed to update self info - no gpsd? \n";
+		echo "\nFailed to update self info - no gpsd? Will wait... \n";
 		/*
 		if($gpsdPROXYname){	// start gpsdPROXY
 			echo "try to start gpsdPROXY $phpCLIexec $gpsdPROXYname\n";
@@ -72,7 +72,9 @@ do {
 		}
 		else break;
 		*/
-		break;
+		// А оно надо -- убиваться? Скорее всего, источник данных появится...
+		//break;
+		goto END;
 	}
 	//echo "vehicle: "; print_r($vehicle);
 	$vehicleJSON = json_encode($vehicle);
@@ -134,9 +136,10 @@ do {
 	if(strpos($spatialProvider,'gpsdPROXY')!==FALSE) { 	//
 		if(!$connected) {
 			$gpsdPROXYsock = createSocketClient($netAISgpsdHost,$netAISgpsdPort); 	// Соединение с gpsdPROXY
+			//echo "\ngpsdPROXYsock=$gpsdPROXYsock;\n"; var_dump($gpsdPROXYsock);
 			if($gpsdPROXYsock === FALSE) { 	// клиент умер
 				$connected = FALSE;
-				echo "\nFailed to connect to gpsd \n";
+				echo "\nFailed to connect to gpsd, will wait. \n";
 				/*
 				if($gpsdPROXYname){	// start gpsdPROXY
 					echo "try to connect to gpsdPROXY \n";
@@ -145,7 +148,9 @@ do {
 				}
 				else break;
 				*/
-				break;
+				// А оно надо -- убиваться? Скорее всего, источник данных появится...
+				//break;
+				goto END;
 			}
 			$res = socket_write($gpsdPROXYsock, "\n\n", 2);	// gpsgPROXY не вернёт greeting, если не получит что-то. Ну, так получилось
 			$buf = socket_read($gpsdPROXYsock, 2048, PHP_NORMAL_READ); 	// читаем VERSION, PHP_NORMAL_READ -- ждать \n
@@ -207,12 +212,14 @@ do {
 				socket_close($gpsdPROXYsock);	// 
 				$connected = FALSE;
 				echo "\nFailed to write data to gpsdPROXY socket by: " . @socket_strerror(socket_last_error($gpsdPROXYsock)) . "\n";
-				break;
 				/*
 				echo "try to start gpsdPROXY $phpCLIexec $gpsdPROXYname\n";
 				exec("$phpCLIexec $gpsdPROXYname > /dev/null 2>&1 &");
 				goto END;	// будем пытаться вечно запустить gpsdPROXY
 				*/
+				// А оно надо -- убиваться? Скорее всего, источник данных появится...
+				//break;
+				goto END;
 			}
 		}
 	}

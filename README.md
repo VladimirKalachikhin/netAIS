@@ -92,7 +92,7 @@ Web interface allows you to control:
 
 * Open/close your private group (server On/Off) - the first section of the screen.
 * Configure membership and start/stop watch on other groups - middle section.
-* Set your own status and the message to bring - bottom section.
+* Set your own status and the message to bring - bottom section. Do not forget to update the status at least as often as specified in the $selfStatusTimeOut parameter of params.php. If the status is not updated within the specified time, the netAIS will switch off.
 
 Web interface optimised to mobile and/or e-Inc devices, old ones including.
 

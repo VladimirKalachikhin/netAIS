@@ -29,9 +29,10 @@ if(!$status) {
 
 // Сервер
 // Определим наличие tor
-exec("netstat -an | grep LISTEN | grep $torPort",$psList); 	// exec будет ждать завершения
-//echo "exec return <pre>";print_r($psList);echo "</pre><br>\n";
+//exec("netstat -an | grep LISTEN | grep $torPort",$psList); 	// exec будет ждать завершения
+exec("netstat -an | grep $torPort",$psList); 	// exec будет ждать завершения
 $torRun = strpos(implode("\n",$psList),'LISTEN');
+//echo "torRun=$torRun; exec return <pre>";print_r($psList);echo "</pre><br>\n";
 if(!$onion) @unlink('server/netAISserver.php'); 	// в конфиге не указан адрес скрытого сервиса -- сервер не может быть включен
 // Возьмём список серверов: csv адрес,запущен,название, комментарий
 $servers = array();
@@ -333,6 +334,7 @@ foreach($servers as $uri => $server) {
 	if($server[1]) { 	// запустим, он проверяет сам, запущен ли
 		//echo "Запускаем netAISclient для сервера {$server[2]}<br>\n";
 		exec("$phpCLIexec netAISclient.php -s$uri > /dev/null 2>&1 & echo $!",$psList); 	// exec не будет ждать завершения: & - daemonise; echo $! - return daemon's PID
+		//echo "[runClients] exec return <pre>";print_r($psList);echo "</pre><br>\n";	// что характерно, какой-то PID будет всегда, и мы не узнаем, запустился клиент или нет.
 		$oneClientRun += 1;
 		// Запустим сервер сообщений AIS для тупых
 		if($netAISdHost) { 	// он проверяет сам, запущен ли
