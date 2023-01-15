@@ -8,8 +8,7 @@ AIS targets are viewing.
 Params: -sADDRESS.onion
 
 */
-$path_parts = pathinfo(__FILE__); // определяем каталог скрипта
-chdir($path_parts['dirname']); // задаем директорию выполнение скрипта
+chdir(__DIR__); // задаем директорию выполнение скрипта
 
 require_once('fGPSD.php'); // fGPSD.php, там есть переменные, которые должны быть глобальным, поэтому здесь
 require_once('fcommon.php'); 	// 
@@ -93,7 +92,7 @@ do {
 	curl_close($ch);
 	//echo "respCode=$respCode;\n";
 	if($respCode != 200) {
-		echo "\nNo connect to $netAISserverURI $torHost:$torPort\n";
+		echo "\nNo connect to $netAISserverURI via $torHost:$torPort\n";
 		echo "Server return: $netAISdata\n";
 		$netAISdata = array();
 		goto END;
@@ -256,9 +255,14 @@ foreach($psList as $str) {
 		case 'sh':
 		case 'bash': 	// если встретилось это слово -- это не та строка
 			break 2;
-		case $phpCLIexec:
-			$run=TRUE;
-			break 3;
+//		case $phpCLIexec:	// авотхрен. В docker image  thecodingmachine/docker-images-php $phpCLIexec===php, но реально запускается /usr/bin/real_php
+//			$run=TRUE;
+//			break 3;
+		default:
+			if(strpos($w,'php')!==FALSE){
+				$run=TRUE;
+				break 3;
+			}
 		}
 	}
 }
