@@ -328,7 +328,7 @@ $AISformat = array(
 	'MessageID' => str_pad(decbin(24), 6, '0', STR_PAD_LEFT), 	// 6 bits Identifier for Message 24; always 24
 	'Repeatindicator' => str_pad(decbin(0), 2, '0', STR_PAD_LEFT), 	// 2 Repeat indicator 0 = default; 3 = do not repeat any more
 	'mmsi' => array('num',30,1), 	// str_pad(decbin($mmsi), 30, '0', STR_PAD_LEFT);// 30 bits User ID  	MMSI number
-	'Part number' => str_pad(decbin(1), 2, '1', STR_PAD_LEFT), 	// 2 Part number  always 1 for Part B
+	'Part number' => str_pad(decbin(1), 2, '0', STR_PAD_LEFT), 	// 2 Part number  always 1 for Part B
 	'shiptype' => array('num',8,1), // str_pad(decbin($shiptype), 8, '0', STR_PAD_LEFT);//8 Type of ship and cargo type
 	'VendorID' => char2bin('', 7), 	// 42 Unique identification of the Unit by a number as defined by the manufacturer (option; “@@@@@@@” = not available = default)
 	'callsign' => array('str',7), 	// $ais->char2bin($callsign, 7) 42 Call sign of the MMSI-registered vessel. 7 x 6 bit ASCII characters,

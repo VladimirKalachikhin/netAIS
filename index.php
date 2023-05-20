@@ -2,8 +2,9 @@
 $path_parts = pathinfo(__FILE__); // определяем каталог скрипта
 chdir($path_parts['dirname']); // задаем директорию выполнение скрипта
 
-$version = ' v.1.5.7';
+$version = ' v.1.5.9';
 /*
+1.5.8 restart clients via cron
 1.5.2 work with SignalK
 1.5.1 work via gpsdPROXY simultaneously with saved data to file
 1.5.0 access by index.php, not by netAISserver.php. So it is possible .onion/?member... uri with common Apache2 config. Yes, for stupid NodeJS.
@@ -340,12 +341,15 @@ foreach($servers as $uri => $server) {
 		if($netAISdHost) { 	// он проверяет сам, запущен ли
 			exec("$phpCLIexec netAISd.php > /dev/null 2>&1 & echo $!",$psList); 	// exec не будет ждать завершения: & - daemonise; echo $! - return daemon's PID
 		}
+		exec("crontab -l | grep -v '".$phpCLIexec.'netAISclient.php -s'.$uri."'  | crontab -"); 	// удалим запуск клиента из cron
+		exec('(crontab -l ; echo "* * * * * '.$phpCLIexec.'netAISclient.php -s'.$uri.'") | crontab - '); 	// добавим запуск клиента в cron, каждую минуту
 	}
 	else { 	// убъём
 		killClient($uri);
 		$netAISJSONfileName = $netAISJSONfilesDir.$uri;
 		@unlink($netAISJSONfileName); 	// если netAIS выключен -- файл с целями должен быть удалён, иначе эти цели будут показываться вечно
 		$oneClientRun -= 1;
+		exec("crontab -l | grep -v '".$phpCLIexec.'netAISclient.php -s'.$uri."'  | crontab -"); 	// удалим запуск клиента из cron
 	}
 }
 //echo "oneClientRun=$oneClientRun;<br>\n";

@@ -1,5 +1,6 @@
 <?php
 /* netAIS client
+Daemon.
 Ask netAIS server from params.php, send to self info, get other,
 and put it to the gpsdAISd-like your own AIS info file.
 GaladrielMap askAIS.php read this file and combine with original gpsdAISd file. So all
@@ -43,14 +44,18 @@ if(IRun($netAISserverURI)) { 	// Я ли?
 $netAISJSONfileName = $netAISJSONfilesDir.$netAISserverURI;
 if(substr($netAISserverURI,-6) == '.onion') $netAISserverURI .= $serverPath;
 $spatialProvider = NULL; 	// строка идентификации источника координат
-/* Оказалось, что дочерний процесс тоже убивается при смерте родительского. Я полагал, что при & -- нет. Чтобы не убивался, нужно nohup command &
+/* Оказалось, что дочерний процесс тоже убивается при смерте родительского. Я полагал, 
+что при & -- нет. Чтобы не убивался, нужно nohup command &
 В результате при самоубийстве netAISclient по неактивности юзера будет убит gpsdPROXY, если 
 он был запущен отсюда.
+Но это фигня какая-то....
+*/
 // start gpsdPROXY
+// запускаем только здесь, потому что в index.php запуск клиента кладётся в cron,
+// и если что -- оно запустится и запустит $gpsdPROXYname здесь.
 if($gpsdPROXYname){
 	exec("$phpCLIexec $gpsdPROXYname > /dev/null 2>&1 &");
 }
-*/
 $vehicle = getSelfParms(); 	// базовая информация о себе: название, позывные, etc
 $connected = FALSE;
 do {
