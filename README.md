@@ -28,9 +28,10 @@ Info is a JSON encoded array with MMSI keys and an array of data as value. The d
 The [GaladrielMap](http://galadrielmap.hs-yachten.at/) chart plotter receives netAIS info directly from the file. For the others has a daemon that cast info as standard AIS flow.
 
 ## Demo
-Public group for testing:  
+~~Public group for testing:  
 **2q6q4phwaduy4mly2mrujxlhpjg7el7z2b4u6s7spghylcd6bv3eqvyd.onion**  
-All active group members are visible on  [GaladrielMap](http://galadrielmap.hs-yachten.at/) [Live demo](http://130.61.159.53/map/).
+All active group members are visible on ~~ [GaladrielMap](http://galadrielmap.hs-yachten.at/) [~~Live demo~~](http://130.61.159.53/map/).  
+Unfortunately, the Oracle Inc. turned out to be a crook, so the demo does not work.
 
 ## Compatibility
 Linux. 
