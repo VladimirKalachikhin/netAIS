@@ -42,7 +42,7 @@ else {
 	$serverTXT = 'Своя группа netAIS:';
 	$serverOffTXT = ' не запущена';
 	$serverOnTXT1 = " работает, адрес: <input type='text' value='";
-	$serverOnTXT2 = "' size='22' style='font-size:110%;'>";
+	$serverOnTXT2 = "' style='font-size:110%;'>";
 	$serverErrTXT = ' СБОЙ - не запущена служба tor или не сконфигурирован сервис onion.';
 	$serverErrTXT1 = ' СБОЙ - не запущена служба tor';
 	$serverErrTXT2 = ' СБОЙ - неизвестная причина. Права?';

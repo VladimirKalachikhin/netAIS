@@ -1,4 +1,10 @@
 <?php
+/*
+askGPSD	получает информацию от gpsd (или gpsdPROXY) методом ?POLL;
+getPosAndInfo	Собирает информацию с подключенных датчиков ГПС, etc. - что умеет gpsd или SignalK
+getPosAndInfoFromGPSD
+getPosAndInfoFromSignalK
+*/
 
 $SEEN_GPS = 0x01; $SEEN_AIS = 0x08;
 

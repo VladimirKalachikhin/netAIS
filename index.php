@@ -2,7 +2,7 @@
 $path_parts = pathinfo(__FILE__); // определяем каталог скрипта
 chdir($path_parts['dirname']); // задаем директорию выполнение скрипта
 
-$version = ' v.1.5.9';
+$version = ' v.1.5.10';
 /*
 1.5.8 restart clients via cron
 1.5.2 work with SignalK
