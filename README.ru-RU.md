@@ -1,5 +1,5 @@
 [In English](https://github.com/VladimirKalachikhin/netAIS/blob/master/README.md)  
-# netAIS [![License: CC BY-SA 4.0](https://img.shields.io/badge/License-CC%20BY--SA%204.0-lightgrey.svg)](https://creativecommons.org/licenses/by-sa/4.0/)
+# netAIS [![License: CC BY-NC-SA 4.0](screenshots/Cc-by-nc-sa_icon.svg)](https://creativecommons.org/licenses/by-nc-sa/4.0/deed.en)
 
 ## v. 1.5
 Обмен AIS-подобными сообщениями с координатами и сопутствующей информацией через Интрнет между участниками выделенной группы. Для взаимодействия не требуется интернет-сервер с реальным адресом.
