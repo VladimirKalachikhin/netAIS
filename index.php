@@ -165,7 +165,7 @@ else {
 }
 ?>
 <!DOCTYPE html >
-<html lang="ru">
+<html>
 <head>
 	<link href="common.css" rel="stylesheet" type="text/css">
 	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
