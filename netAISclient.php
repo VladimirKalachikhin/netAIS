@@ -9,6 +9,9 @@ AIS targets are viewing.
 Params: -sADDRESS.onion
 
 */
+ini_set('error_reporting', E_ALL & ~E_NOTICE & ~E_STRICT & ~E_DEPRECATED);
+//ini_set('error_reporting', E_ALL & ~E_STRICT & ~E_DEPRECATED);
+
 chdir(__DIR__); // задаем директорию выполнение скрипта
 
 require_once('fGPSD.php'); // fGPSD.php, там есть переменные, которые должны быть глобальным, поэтому здесь
@@ -334,8 +337,8 @@ $vehicle = @$vehicleInfo['mmsi'];
 if(!$vehicle) return; 	// оно может быть пустое
 foreach($vehicleInfo as $opt => $value) {
 	$aisData[$vehicle][$opt] = $value; 	// 
-}
-}
+};
+};	// end function updAISdata
 
 
 function createSocketClient($host,$port){

@@ -7,8 +7,8 @@ Exchange AIS-like messages via the Internet to watch position members of your pr
 Suitable for fishing, regatta and collective water recreation.  
 
 ![scheme](screenshots/art.png)   
-Software use [TOR](torproject.org) as a communication environment, so it works smoothly via mobile internet and public wi-fi. Spatial info gets from [gpsd](https://gpsd.io/) or [Signal K](https://signalk.org/).  
-netAIS messages can be accepted by any AIS-compatible device or software.
+The software is a set of daemons (servers) running on a user's computer under Linux OS. Software use [TOR](torproject.org) as a communication environment, so it works smoothly via mobile internet and public wi-fi. Spatial info gets from [gpsd](https://gpsd.io/) or [Signal K](https://signalk.org/).  
+netAIS messages can be accepted via lan by any AIS-compatible device or software.
 
 ## Features
 * Service one private group.
@@ -19,22 +19,22 @@ netAIS messages can be accepted by any AIS-compatible device or software.
 Any of the software kits has a client and a server for one private group. The server must be configured as a TOR hidden service.  
 You must get .onion address of this hidden service in any way - by email, SMS or pigeon post, and configure the client with it.  
 The client calls to the server with spatial and other info in AIS-like format. Server return info about all of the group members.  
-This info puts to file and may be got asynchronously.  
+This info puts to file and available via tcp socket and may be got asynchronously.  
 Info is a JSON encoded array with MMSI keys and an array of data as value. The data are key-value pair as described in gpsd/www/AIVDM.adoc (if you have gpsd) or [e-Navigation Netherlands](http://www.e-navigation.nl/system-messages) site, except:
 
 * The units of measurement are given in the human species
 * The timestamp  is a Unix timestamp
 
-The [GaladrielMap](http://galadrielmap.hs-yachten.at/) chart plotter receives netAIS info directly from the file. For the others has a daemon that cast info as standard AIS flow.
+The [GaladrielMap](http://galadrielmap.hs-yachten.at/) chart plotter receives netAIS info via [gpsdPROXY](https://github.com/VladimirKalachikhin/gpsdPROXY). For the others has a daemon that cast info as standard AIS flow.
 
 ## Demo
-~~Public group for testing:  
+Public group for testing:  
 **2q6q4phwaduy4mly2mrujxlhpjg7el7z2b4u6s7spghylcd6bv3eqvyd.onion**  
-All active group members are visible on ~~ [GaladrielMap](http://galadrielmap.hs-yachten.at/) [~~Live demo~~](http://130.61.159.53/map/).  
+~~All active group members are visible on [GaladrielMap](http://galadrielmap.hs-yachten.at/) [Live demo](http://130.61.159.53/map/)~~.  
 Unfortunately, the Oracle Inc. turned out to be a crook, so the demo does not work.
 
 ## Compatibility
-Linux. 
+Linux, PHP7. 
 
 ## Dependencies
 php-curl
@@ -44,22 +44,23 @@ You must have a web server under Linux with php support and [TOR service](https:
 Copy the project files to a web server directory and adjust paths in _params.php_.  
 Set _write_ access to `data/` and `server/` directories for web server user (www-data?).  
 [Configure TOR hidden service](https://www.torproject.org/docs/tor-onion-service.html.en) to `server/` directory if you are going to support a corporate group. It's no need if you want to be a group member only.  
-Update _params.php_: place to $onion variable address you TOR hidden service. This address located in `hostname` file, as it described in `torrs`. (for example: `# cat /var/lib/tor/hidden_service_netAIS/hostname`)  
+Update _params.php_: place to $onion variable address you TOR hidden service. This address located in `hostname` file, as it described in `torrs`. (for example: `# cat /var/lib/tor/hidden_service_netAIS/hostname` )  
 Update _params.php_ to address and port of AIS cast daemon, if need, in $netAISdHo and $netAISdPort variables.
 
 ### Vehicle info
 The information abou you vehicle stored in _boatInfo.ini_ file. Fill it correctly.
 
 ### Spatial info
-Usually, netAIS client gets your positioning from **gpsd** instance on your server. How to install and configure **gpsd** see [gpsd pages](https://gpsd.io/). Update _params.php_ to **gpsd** host and port, if you want.  
-Another way gets spatial info is a **Signal K** infrastructure. netAIS client will try found the **Signal K** service on your local network, and get a position from it.  
-However, it is better to set the **Signal K** server address in _params.php_.
+Usually, netAIS client gets your positioning from **gpsd** or **gpsdPROXY** instance on your server. How to install and configure **gpsd** see [gpsd pages](https://gpsd.io/). **gpsdPROXY** must be worked if you use [GaladrielMap](http://galadrielmap.hs-yachten.at/). Update _params.php_ to **gpsd** host and port, if you want.  
+Another way gets spatial info is a **Signal K** infrastructure. netAIS client will try found the **Signal K** service on your local network, and get a position from it. 
+However, it is better to set the **Signal K** server address in _params.php_.  
+
 
 ## Usage
 The netAIS data may be received as:  
 
-* local file. This way uses [GaladrielMap](http://galadrielmap.hs-yachten.at/) chart plotter. Full-featured, include user-defined status messages.
-* via [gpsdPROXY](https://github.com/VladimirKalachikhin/gpsdPROXY). Easiest, recommended. Jast set _*$netAISgpsdHost* *$netAISgpsdPort* in _params.php_to gpsdPROXY. gpsdPROXY will return netAIS data as well. Full-featured too.
+* local file witth name `$netAISJSONfilesDir/group_address.onion`. The $netAISJSONfilesDir option is set in _params.php_. Full-featured, include user-defined status messages.
+* via [gpsdPROXY](https://github.com/VladimirKalachikhin/gpsdPROXY). Easiest, recommended. Just set _*$netAISgpsdHost* *$netAISgpsdPort* in _params.php_to gpsdPROXY. gpsdPROXY will return netAIS data as well. Full-featured too.
 * network socket with gpsd:// protocol. Available broadcast imo, vin, custom shiptype and custom status text.
 * network socket with the flow of AIS sentences 18,24 and 27. Suitable for [OpenCPN](https://opencpn.org/), [OruxMaps](https://www.oruxmaps.com/cs/es), [Signal K](https://signalk.org/) and an iron chart plotters. Base features only.
 

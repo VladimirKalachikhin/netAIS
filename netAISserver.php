@@ -1,6 +1,8 @@
 <?php
 /* netAIS server
 */
+ini_set('error_reporting', E_ALL & ~E_NOTICE & ~E_STRICT & ~E_DEPRECATED);
+//ini_set('error_reporting', E_ALL & ~E_STRICT & ~E_DEPRECATED);
 ob_start(); 	// попробуем перехватить любой вывод скрипта
 
 $self = realpath(__FILE__); // определяем реальный каталог самого скрипта, не ссылки

@@ -1,8 +1,9 @@
 <?php
-$path_parts = pathinfo(__FILE__); // определяем каталог скрипта
-chdir($path_parts['dirname']); // задаем директорию выполнение скрипта
+ini_set('error_reporting', E_ALL & ~E_NOTICE & ~E_STRICT & ~E_DEPRECATED);
+//ini_set('error_reporting', E_ALL & ~E_STRICT & ~E_DEPRECATED);
+chdir(__DIR__); // задаем директорию выполнение скрипта
 
-$version = ' v.1.5.11';
+$version = ' v.1.5.12';
 /*
 1.5.8 restart clients via cron
 1.5.2 work with SignalK
