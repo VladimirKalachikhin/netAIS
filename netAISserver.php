@@ -42,12 +42,12 @@ foreach($aisData as $vehicle => &$data) {
 	if(($now-$data['timestamp'])>$noVehicleTimeout) unset($aisData[$vehicle]);
 }
 //echo "aisData: <pre>"; print_r($aisData);echo "</pre\n>";
-file_put_contents($netAISserverDataFileName,json_encode($aisData));
+file_put_contents($netAISserverDataFileName,json_encode($aisData,JSON_UNESCAPED_UNICODE));
 clearstatcache(TRUE,$netAISserverDataFileName);
 
 http_response_code(200);
 OUT:
-$aisData=json_encode($aisData);
+$aisData=json_encode($aisData,JSON_UNESCAPED_UNICODE);
 ob_end_clean(); 			// очистим, если что попало в буфер
 header('Content-Type: application/json;charset=utf-8;');
 echo "$aisData \n";

@@ -523,7 +523,7 @@ $converter = array(
 'Э' => 'E',   'Ю' => 'Yu',  'Я' => 'Ya'
 );
 return strtr($string, $converter);
-}
+}; 	// end function rus2translit
 
 function IRun() {
 /**/

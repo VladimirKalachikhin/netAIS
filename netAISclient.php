@@ -88,7 +88,7 @@ do {
 	$uri = "$netAISserverURI?member=".urlencode($vehicleJSON);
 	//echo $uri;
 	// Отошлём всё серверу и получим свежее
-	$ch = curl_init(); 	// tor не http proxy, а file_get_contents не умеет socs. Приходится через жопу. Ой, через cURL.
+	$ch = curl_init(); 	// tor не http proxy, а file_get_contents не умеет socs. Приходится через жопу. Ой, через cURL. С тех пор tor умеет http proxy.
 	curl_setopt($ch, CURLOPT_URL, $uri);
 	curl_setopt($ch, CURLOPT_PROXYTYPE, CURLPROXY_SOCKS5_HOSTNAME); 	// с разрешением имён через прокси
 	curl_setopt($ch, CURLOPT_PROXY, "$torHost:$torPort");
@@ -301,12 +301,14 @@ if(!$status) {
 	$status['description']='';
 	$status['destination']=''; 	// 
 	$status['eta']='';
+	$status['safety_related_text']='';
 }
 //echo "status: <pre>"; print_r($status);echo "</pre>\n";
 $vehicle['status'] = (int)$status['status']; 	// Navigational status 0 = under way using engine, 1 = at anchor, 2 = not under command, 3 = restricted maneuverability, 4 = constrained by her draught, 5 = moored, 6 = aground, 7 = engaged in fishing, 8 = under way sailing, 9 = reserved for future amendment of navigational status for ships carrying DG, HS, or MP, or IMO hazard or pollutant category C, high speed craft (HSC), 10 = reserved for future amendment of navigational status for ships carrying dangerous goods (DG), harmful substances (HS) or marine pollutants (MP), or IMO hazard or pollutant category A, wing in ground (WIG);11 = power-driven vessel towing astern (regional use), 12 = power-driven vessel pushing ahead or towing alongside (regional use); 13 = reserved for future use, 14 = AIS-SART (active), MOB-AIS, EPIRB-AIS 15 = undefined = default (also used by AIS-SART, MOB-AIS and EPIRB-AIS under test)
 $vehicle['status_text'] = $status['description'];
 $vehicle['destination'] = $status['destination'];
 $vehicle['eta'] = $status['eta'];
+$vehicle['safety_related_text'] = $status['safety_related_text'];
 //echo "Координаты от $host:$netAISgpsdPort;\n";
 $TPV = getPosAndInfo($host,$netAISgpsdPort); 	// fGPSD.php, там понимают массив в адресе
 //echo "TPV:";print_r($TPV);echo "\n";

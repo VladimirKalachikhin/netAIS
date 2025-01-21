@@ -3,7 +3,7 @@ ini_set('error_reporting', E_ALL & ~E_NOTICE & ~E_STRICT & ~E_DEPRECATED);
 //ini_set('error_reporting', E_ALL & ~E_STRICT & ~E_DEPRECATED);
 chdir(__DIR__); // задаем директорию выполнение скрипта
 
-$version = ' v.1.5.12';
+$version = ' v.1.6.0';
 /*
 1.5.8 restart clients via cron
 1.5.2 work with SignalK
@@ -11,10 +11,26 @@ $version = ' v.1.5.12';
 1.5.0 access by index.php, not by netAISserver.php. So it is possible .onion/?member... uri with common Apache2 config. Yes, for stupid NodeJS.
 */
 require('fcommon.php'); 	// 
-require('internationalisation.php'); 	// 
 require('params.php'); 	// 
 $netAISJSONfilesDir = getAISdFilesNames($netAISJSONfilesDir); 	// определим имя и создадим каталог для данных netAIS
 $serversListFileName = 'server/serversList.csv'; 	// list of available servers
+
+// Интернационализация
+// требуется, чтобы языки были перечислены в порядке убывания предпочтения
+//$inStr = 'nb-NO,nb;q=0.9,no-NO;q=0.8,no;q=0.6,nn-NO;q=0.5,nn;q=0.4,en-US;q=0.3,en;q=0.1';
+//$appLocales = array_map( function ($l) {return explode(';',$l)[0];},explode(',',$inStr));
+$appLocales = array_map( function ($l) {return explode(';',$l)[0];},explode(',',$_SERVER['HTTP_ACCEPT_LANGUAGE']));
+// Здесь игнорируются двойные локали (en-US), поэтому американскую локализацию сделать нельзя. Удмуртскую тоже.
+$appLocales = array_unique(array_map( function ($l) {return strtolower(explode('-',$l)[0]);},$appLocales));
+//echo "<pre>";print_r($appLocales);echo"</pre>";
+foreach($appLocales as $appLocale){	// в порядке убывания предпочтения попробуем загрузить файл интернационализации
+	$res = @include("internationalisation/$appLocale.php");
+	if($res) break;
+};
+if(!$res) {
+	$appLocale = 'en';
+	@include("internationalisation/en.php");
+}
 
 //echo $_SERVER['PHP_SELF'];
 clearstatcache(TRUE,$selfStatusFileName); 	// from params.php
@@ -126,6 +142,26 @@ elseif($_REQUEST['startClient']) { 	//
 	}
 }
 // изменение статуса
+elseif($_REQUEST['criminalAlert']){
+	$status['status']=14; 	// 
+	$status['description']=$AISstatus14criminalTXT;
+	$status['safety_related_text']='A criminal attack!';
+}
+elseif($_REQUEST['fireAlert']){
+	$status['status']=14; 	// 
+	$status['description']=$AISstatus14fireTXT;
+	$status['safety_related_text']="There's a fire on board!";
+}
+elseif($_REQUEST['medicalAlert']){
+	$status['status']=14; 	// 
+	$status['description']=$AISstatus14medicalTXT;
+	$status['safety_related_text']='We have a medical emergency!';
+}
+elseif($_REQUEST['wreckAlert']){
+	$status['status']=14; 	// 
+	$status['description']=$AISstatus14wreckTXT;
+	$status['safety_related_text']='Our vessel is sinking!';
+}
 elseif($_REQUEST['vehacleStatus'] or $_REQUEST['vehicleDescription'] or ($_REQUEST['vehacleStatus']=='0')) { 	// 
 	//echo "vehacleStatus={$_REQUEST['vehacleStatus']}; vehicleDescription={$_REQUEST['vehicleDescription']};<br>\n";
 	$status['status']=(int)$_REQUEST['vehacleStatus']; 	// 
@@ -190,136 +226,144 @@ infoBox.innerText='width: '+window.innerWidth+' height: '+window.innerHeight;
 	top: 50%;
 	left: 50%;
 	transform: translate(-50%, -50%);'>
-<form id='server' 
-style='padding:0.1rem;border:1px solid black;border-radius:5px;'
-action='<?php echo $_SERVER['PHP_SELF'];?>'
->
-	<table>
-	<tr>
-	<td style='width:100%;'><?php echo "$serverTXT $str";?></td>
-	<td style='width:4rem;'>
-		<button type=submit name="<?php echo $name ?>" value='1' style='margin:0rem;padding:0;'>
-			<img <?php echo $img ?>  class='knob'>
-		</button>
-	</td>
-	</tr>
-	</table>
-</form>
-
-<div id='client'
-style='width:100%;height:53vh;margin:0.5rem 0 0.5rem 0;border:1px solid black;border-radius:5px;'
->
-<div style='height:65%;overflow:auto;padding:0.5rem;'>
-<?php
-//echo "torRun=$torRun;<br>";
-if(!$torRun) echo $serverErrTXT1; 	// СБОЙ - не запущена служба tor
-else {
-	foreach($servers as $url => $server) {
-		if(is_int($url)) continue; 	// строки - комментарии
-?>
-	<form action='<?php echo $_SERVER['PHP_SELF'];?>' style='margin:0.5rem 0 0.5rem 0;'>
-	<input type='hidden' name='server' value='<?php echo $server[0] ?>'>
-	<table><tr>
-		<td>
-			<?php if($server[1]) { ?>
-			<button type='submit' name="stopClient" value='1' style='margin:0;padding:0;'>
-				<img src="img/clientRun.svg" alt="STOP"  class='knob'>
-			</button>
-			<?php } else { ?>
-			<button type=submit name="startClient" value='1' style='margin:0;padding:0;'>
-				<img src="img/off.svg" alt="START"  class='knob'>
-			</button>
-			<?php } ?>
-		</td>
-		<td>
-			<input type='text' name='serverName' size='17' value='<?php echo htmlentities($server[2],ENT_QUOTES); ?>' disabled style='font-size:90%;'>
-		</td>
-		<td style='width:100%'>
-			<textarea name='serverDescription' rows=2 disabled style='width:100%;font-size:75%;'>
-<?php echo htmlentities($server[3],ENT_QUOTES); ?></textarea>
-		</td>
-		<td>
-			<button type='button' name='editClient' value='1' style='margin:0;padding:0;'
-			onclick='
-				//console.log(this);
-				const form = this.closest("form");
-				// новая кнопка "удалить"
-				let but = form.querySelector("button"); 	// первый button в форме
-				but.firstElementChild.src="img/del.svg"; 	// сменим картинку
-				but.name = "delClient";
-				// включить поля ввода
-				form.querySelector("input[type=text]").disabled = false;
-				form.querySelector("textarea").disabled = false;
-				// новая кнопка "сохранить изменения"
-				event.preventDefault(); 	// submit не сработает
-				this.type="submit"; 	// сменим тип
-				this.firstElementChild.src="img/ok.svg"; 	// сменим картинку
-				this.onclick=null;
-			'
-			>
-				<img src="img/edit.svg" alt="EDIT" class='knob'>
-			</button>
-		</td>
-	</tr></table>
+	<form id='server' style='padding:0.1rem;border:1px solid black;border-radius:5px;' action='<?php echo $_SERVER['PHP_SELF'];?>'>
+		<table>
+			<tr>
+				<td style='width:100%;'><?php echo "$serverTXT $str";?></td>
+				<td style='width:4rem;'>
+					<button type=submit name="<?php echo $name ?>" value='1' style='margin:0rem;padding:0;'>
+						<img <?php echo $img ?>  class='knob'>
+					</button>
+				</td>
+			</tr>
+		</table>
 	</form>
-<?php
-	}
-}
-?>
-</div>
-<form action='<?php echo $_SERVER['PHP_SELF'];?>' style='padding:0.5rem 0 0.5rem 0;'>
-<table><tr>
-	<td>
-		<input type='text' name='server' placeholder='<?php echo $serverPlaceholderTXT ?>' size='17' style='font-size:90%;'>
-	</td>
-	<td>
-		<input type='text' name='serverName' placeholder='<?php echo $serverNamePlaceholderTXT ?>' size='17' style='font-size:90%;'>
-	</td>
-	<td style='width:100%'>
-		<textarea name='serverDescription' placeholder='<?php echo $serverDescrPlaceholderTXT ?>' rows=2 style='width:99%;font-size:75%;padding:0.5rem;'>
-</textarea>
-	</td>
-	<td>
-		<button type=submit name="addClient" value='1' style='margin:0;padding:0;'>
-			<img src="img/add.svg" alt="EDIT" class='knob'>
+	<div id='client' style='width:100%;height:53vh;margin:0.5rem 0 0.5rem 0;border:1px solid black;border-radius:5px;'>
+		<div style='height:65%;overflow:auto;padding:0.5rem;'>
+		<?php
+		//echo "torRun=$torRun;<br>";
+		if(!$torRun) echo $serverErrTXT1; 	// СБОЙ - не запущена служба tor
+		else {
+			foreach($servers as $url => $server) {
+				if(is_int($url)) continue; 	// строки - комментарии
+		?>
+			<form action='<?php echo $_SERVER['PHP_SELF'];?>' style='margin:0.5rem 0 0.5rem 0;'>
+			<input type='hidden' name='server' value='<?php echo $server[0] ?>'>
+			<table><tr>
+				<td>
+					<?php if($server[1]) { ?>
+					<button type='submit' name="stopClient" value='1' style='margin:0;padding:0;'>
+						<img src="img/clientRun.svg" alt="STOP"  class='knob'>
+					</button>
+					<?php } else { ?>
+					<button type=submit name="startClient" value='1' style='margin:0;padding:0;'>
+						<img src="img/off.svg" alt="START"  class='knob'>
+					</button>
+					<?php } ?>
+				</td>
+				<td>
+					<input type='text' name='serverName' size='17' value='<?php echo htmlentities($server[2],ENT_QUOTES); ?>' disabled style='font-size:90%;'>
+				</td>
+				<td style='width:100%'>
+					<textarea name='serverDescription' rows=2 disabled style='width:100%;font-size:75%;'>
+<?php echo htmlentities($server[3],ENT_QUOTES); ?>
+					</textarea>
+				</td>
+				<td>
+					<button type='button' name='editClient' value='1' style='margin:0;padding:0;'
+					onclick='
+						//console.log(this);
+						const form = this.closest("form");
+						// новая кнопка "удалить"
+						let but = form.querySelector("button"); 	// первый button в форме
+						but.firstElementChild.src="img/del.svg"; 	// сменим картинку
+						but.name = "delClient";
+						// включить поля ввода
+						form.querySelector("input[type=text]").disabled = false;
+						form.querySelector("textarea").disabled = false;
+						// новая кнопка "сохранить изменения"
+						event.preventDefault(); 	// submit не сработает
+						this.type="submit"; 	// сменим тип
+						this.firstElementChild.src="img/ok.svg"; 	// сменим картинку
+						this.onclick=null;
+					'
+					>
+						<img src="img/edit.svg" alt="EDIT" class='knob'>
+					</button>
+				</td>
+			</tr></table>
+			</form>
+		<?php
+			};
+		};
+		?>
+		</div>
+		<form action='<?php echo $_SERVER['PHP_SELF'];?>' style='padding:0.5rem 0 0.5rem 0;'>
+			<table>
+				<tr>
+					<td>
+						<input type='text' name='server' placeholder='<?php echo $serverPlaceholderTXT ?>' size='17' style='font-size:90%;'>
+					</td>
+					<td>
+						<input type='text' name='serverName' placeholder='<?php echo $serverNamePlaceholderTXT ?>' size='17' style='font-size:90%;'>
+					</td>
+					<td style='width:100%'>
+						<textarea name='serverDescription' placeholder='<?php echo $serverDescrPlaceholderTXT ?>' rows=2 style='width:99%;font-size:75%;padding:0.5rem;'>
+						</textarea>
+					</td>
+					<td>
+						<button type=submit name="addClient" value='1' style='margin:0;padding:0;'>
+							<img src="img/add.svg" alt="EDIT" class='knob'>
+						</button>
+					</td>
+				</tr>
+			</table>
+		</form>
+	</div>
+	<form  action='<?php echo $_SERVER['PHP_SELF'];?>' style='width:100%;margin:0.5rem 0 0.5rem 0;border:1px solid black;border-radius:5px;text-align:center;'>
+		<button type=submit name="criminalAlert" value='1' style='margin:1rem;padding:0;width:15%;'>
+			<img src="img/robbery.png" alt="Criminal alert!" class='knob'>
 		</button>
-	</td>
-</tr></table>
-</form>
-</div>
-<?php ?>
-<div 
-style='width:100%;border:1px solid black;border-radius:5px;'
->
-<form  action='<?php echo $_SERVER['PHP_SELF'];?>' id='destination'
-style='margin:0.5rem 0 0.5rem 0;padding:0.5rem;width:47%;float:right';
->
-	<input type='text' name='destinationCommonName' onchange="this.form.submit()" placeholder='<?php echo $vehicleDestinationPlaceholderTXT; ?>' size='17' style='font-size:120%;width:97%;margin:0.5rem' value='<?php echo $status['destination'];?>'><br>
-	<input type='datetime-local' name='destinationETA' onchange="this.form.submit()" placeholder='<?php echo $vehicleETAplaceholderTXT; ?>' size='17' style='font-size:120%;width:97%;margin:0.5rem' value='<?php echo $status['eta'];?>'>
-</form>
-<form  action='<?php echo $_SERVER['PHP_SELF'];?>' id='status'
-style='margin:0.5rem;width:47%;'
->
-<!--0 = under way using engine, 1 = at anchor, 2 = not under command, 3 = restricted maneuverability, 4 = constrained by her draught, 5 = moored, 6 = aground, 7 = engaged in fishing, 8 = under way sailing, 11 = power-driven vessel towing astern (regional use), 12 = power-driven vessel pushing ahead or towing alongside (regional use);  15 = undefined = default -->
-<!--0 = Двигаюсь под мотором, 1 = На якоре, 2 = Без экипажа, 3 = Ограничен в манёвре, 4 = Ограничен осадкой, 5 = Ошвартован, 6 = На мели, 7 = Занят ловлей рыбы, 8 = Двигаюсь под парусом, 11 = Тяну буксир (regional use), 12 = Толкаю состав или буксирую под бортом (regional use);  15 = неопределённое = default -->
-	<select name='vehacleStatus' onchange="this.form.submit()" size='1' style='width:100%;font-size:150%;text-align: center;'>
-		<option value='0' <?php if($status['status'] == 0) echo "selected=1";?> ><?php echo $AISstatusTXT[0]; ?></option>
-		<option value='1' <?php if($status['status'] == 1) echo "selected=1";?> ><?php echo $AISstatusTXT[1]; ?></option>
-		<option value='2' <?php if($status['status'] == 2) echo "selected=1";?> ><?php echo $AISstatusTXT[2]; ?></option>
-		<option value='3' <?php if($status['status'] == 3) echo "selected=1";?> ><?php echo $AISstatusTXT[3]; ?></option>
-		<option value='4' <?php if($status['status'] == 4) echo "selected=1";?> ><?php echo $AISstatusTXT[4]; ?></option>
-		<option value='5' <?php if($status['status'] == 5) echo "selected=1";?> ><?php echo $AISstatusTXT[5]; ?></option>
-		<option value='6' <?php if($status['status'] == 6) echo "selected=1";?> ><?php echo $AISstatusTXT[6]; ?></option>
-		<option value='7' <?php if($status['status'] == 7) echo "selected=1";?> ><?php echo $AISstatusTXT[7]; ?></option>
-		<option value='8' <?php if($status['status'] == 8) echo "selected=1";?> ><?php echo $AISstatusTXT[8]; ?></option>
-		<option value='11' <?php if($status['status'] == 11) echo "selected=1";?> ><?php echo $AISstatusTXT[11]; ?></option>
-		<option value='12' <?php if($status['status'] == 12) echo "selected=1";?> ><?php echo $AISstatusTXT[12]; ?></option>
-		<option value='15' <?php if($status['status'] == 15) echo "selected=1";?> ><?php echo $AISstatusTXT[15]; ?></option>
-	</select><br>
-	<textarea name='vehicleDescription' onchange="this.form.submit()" placeholder='<?php echo $vehicleDescrPlaceholderTXT; ?>' rows=3 style='width:98%;font-size:75%;margin:0.5rem 0;padding:0.5rem;'>
+		<button type=submit name="fireAlert" value='1' style='margin:1rem;padding:0;width:15%;'>
+			<img src="img/fire.png" alt="Fire alert!" class='knob'>
+		</button>
+		<button type=submit name="medicalAlert" value='1' style='margin:1rem;padding:0;width:15%;'>
+			<img src="img/medical.png" alt="AID alert!" class='knob'>
+		</button>
+		<button type=submit name="wreckAlert" value='1' style='margin:1rem;padding:0;width:15%;'>
+			<img src="img/shipwreck_danger.png" alt="Ship wreck alert!" class='knob'>
+		</button>
+		<button type=submit name="mobAlert" value='1' style='display:none;margin:1rem;padding:0;width:15%;'>
+			<img src="img/mob_marker.png" alt="The man is overboard!" class='knob'>
+		</button>
+	</form>
+	<div style='width:100%;border:1px solid black;border-radius:5px;'>
+		<form  action='<?php echo $_SERVER['PHP_SELF'];?>' id='destination' style='margin:0.5rem 0 0.5rem 0;padding:0.5rem;width:47%;float:right';>
+			<input type='text' name='destinationCommonName' onchange="this.form.submit()" placeholder='<?php echo $vehicleDestinationPlaceholderTXT; ?>' size='17' style='font-size:120%;width:97%;margin:0.5rem' value='<?php echo $status['destination'];?>'><br>
+			<input type='datetime-local' name='destinationETA' onchange="this.form.submit()" placeholder='<?php echo $vehicleETAplaceholderTXT; ?>' size='17' style='font-size:120%;width:97%;margin:0.5rem' value='<?php echo $status['eta'];?>'>
+		</form>
+		<form  action='<?php echo $_SERVER['PHP_SELF'];?>' id='status' style='margin:0.5rem;width:47%;'>
+		<!--0 = under way using engine, 1 = at anchor, 2 = not under command, 3 = restricted maneuverability, 4 = constrained by her draught, 5 = moored, 6 = aground, 7 = engaged in fishing, 8 = under way sailing, 11 = power-driven vessel towing astern (regional use), 12 = power-driven vessel pushing ahead or towing alongside (regional use);  15 = undefined = default -->
+		<!--0 = Двигаюсь под мотором, 1 = На якоре, 2 = Без экипажа, 3 = Ограничен в манёвре, 4 = Ограничен осадкой, 5 = Ошвартован, 6 = На мели, 7 = Занят ловлей рыбы, 8 = Двигаюсь под парусом, 11 = Тяну буксир (regional use), 12 = Толкаю состав или буксирую под бортом (regional use);  15 = неопределённое = default -->
+			<select name='vehacleStatus' onchange="this.form.submit()" size='1' style='width:100%;font-size:150%;text-align: center;'>
+				<option value='0' <?php if($status['status'] == 0) echo "selected=1";?> ><?php echo $AISstatusTXT[0]; ?></option>
+				<option value='1' <?php if($status['status'] == 1) echo "selected=1";?> ><?php echo $AISstatusTXT[1]; ?></option>
+				<option value='2' <?php if($status['status'] == 2) echo "selected=1";?> ><?php echo $AISstatusTXT[2]; ?></option>
+				<option value='3' <?php if($status['status'] == 3) echo "selected=1";?> ><?php echo $AISstatusTXT[3]; ?></option>
+				<option value='4' <?php if($status['status'] == 4) echo "selected=1";?> ><?php echo $AISstatusTXT[4]; ?></option>
+				<option value='5' <?php if($status['status'] == 5) echo "selected=1";?> ><?php echo $AISstatusTXT[5]; ?></option>
+				<option value='6' <?php if($status['status'] == 6) echo "selected=1";?> ><?php echo $AISstatusTXT[6]; ?></option>
+				<option value='7' <?php if($status['status'] == 7) echo "selected=1";?> ><?php echo $AISstatusTXT[7]; ?></option>
+				<option value='8' <?php if($status['status'] == 8) echo "selected=1";?> ><?php echo $AISstatusTXT[8]; ?></option>
+				<option value='11' <?php if($status['status'] == 11) echo "selected=1";?> ><?php echo $AISstatusTXT[11]; ?></option>
+				<option value='12' <?php if($status['status'] == 12) echo "selected=1";?> ><?php echo $AISstatusTXT[12]; ?></option>
+				<option value='14' <?php if($status['status'] == 14) echo "selected=1";?> ><?php echo $AISstatusTXT[14]; ?></option>
+				<option value='15' <?php if($status['status'] == 15) echo "selected=1";?> ><?php echo $AISstatusTXT[15]; ?></option>
+			</select><br>
+			<textarea name='vehicleDescription' onchange="this.form.submit()" placeholder='<?php echo $vehicleDescrPlaceholderTXT; ?>' rows=3 style='width:98%;font-size:75%;margin:0.5rem 0;padding:0.5rem;'>
 <?php echo $status['description'];?></textarea>
-</form>
-</div>
+		</form>
+	</div>
 </div>
 </body>
 </html>
