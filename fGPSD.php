@@ -6,23 +6,24 @@ getPosAndInfoFromGPSD
 getPosAndInfoFromSignalK
 */
 
-$SEEN_GPS = 0x01; $SEEN_AIS = 0x08;
-
-function askGPSD($host='localhost',$port=2947,$dataType=0x01) {
+function askGPSD($host='localhost',$port=2947,$dataTypes=array('tpv')) {
 /* Возвращает всю информацию классов gpsd TPV, AIS или и то и то в виде ассоциированного массива
 если $host и $port указывают на реальный gpsd -- то AIS, разумеется, не будет, ибо POLL.
 если же это gpsdPROXY -- AIS будет
-$dataType - Bit vector of property flags. gpsd_json.5 ln 1355
+$dataTypes - массив ключей ответа gpsd/gpsdPROXY, значения которых надо вернуть: array('tpv','ais','mob','collisions')
 */
 $SEEN_GPS = 0x01; $SEEN_AIS = 0x08;
+$requiredDevice = 0;	// какие устройства ы терминологии gpsd_json.5 ln 1355 должны быть в ответе gpsd
+if(in_array('tpv',$dataTypes)) $requiredDevice = $requiredDevice | $SEEN_GPS;
+if(in_array('ais',$dataTypes)) $requiredDevice = $requiredDevice | $SEEN_AIS;
 global $spatialProvider;	// результат попытки обнаружения поставщика координат. Строка из приветствия gpsd, netAIS или строка signalk-server
-//echo "\n\nНачали. dataType=$dataType;host:$host:$port<br>\n";
+//echo "\n\nНачали. host:$host:$port; dataType:";print_r($dataTypes);echo "\n";
 $gpsd  = @stream_socket_client('tcp://'.$host.':'.$port,$errno,$errstr); // открыть сокет 
 $res = @fwrite($gpsd, "\n\n"); 	// если там gpsdPROXY, он не пришлёт VERSION при открытии соединения
 //echo "res=$res; ";var_dump($gpsd);echo "<br>\n";
 if(($res === FALSE) or !$gpsd) return "no GPSD: $errstr";
 //stream_set_blocking($gpsd,FALSE); 	// установим неблокирующий режим чтения Что-то с ним не так...
-//echo "Socket to gpsd opened, handshaking<br>\n";
+//echo "[askGPSD] Socket to gpsd opened, do handshaking\n";
 
 $controlClasses = array('VERSION','DEVICES','DEVICE','WATCH');
 $WATCHsend = FALSE; $POLLsend = FALSE;
@@ -67,7 +68,7 @@ do { 	// при каскадном соединении нескольких gps
 		//echo "Received DEVICES<br>\n"; //
 		$devicePresent = array();
 		foreach($buf["devices"] as $device) {
-			if($device['flags']&$dataType) $devicePresent[] = $device['path']; 	// список требуемых среди обнаруженных и понятых устройств.
+			if($device['flags']&$requiredDevice) $devicePresent[] = $device['path']; 	// список требуемых среди обнаруженных и понятых устройств.
 		}
 		break;
 	case 'DEVICE': 	// здесь информация о подключенных slave gpsd, т.е., общая часть path в имени устройства. Полезно для опроса конкретного устройства, но нам не надо. 
@@ -91,7 +92,7 @@ do { 	// при каскадном соединении нескольких gps
 	}
 	
 }while(!$buf or in_array($buf['class'],$controlClasses));
-//echo "buf: ";echo "<pre>"; print_r($buf); echo "</pre>\n";
+//echo "fGPSD.php [askGPSD] buf: ";echo "<pre>"; print_r($buf); echo "</pre>\n";
 
 if(!$devicePresent) return 'no required devices present';
 //echo "devicePresent: <pre>\n"; print_r($devicePresent); echo "</pre><br>\n";
@@ -99,145 +100,95 @@ if(!$devicePresent) return 'no required devices present';
 @fwrite($gpsd, '?WATCH={"enable":false};'."\n"); 	// велим демону выключить устройства
 fclose($gpsd);
 //echo "Закрыт сокет\n";
-
 if(!$buf['active']) return 'no any active devices';
 
+// Собираем из того, что вернул gpsd то, что просили
 $tpv = array();
-switch($dataType){
-case $SEEN_GPS: 	// запросили только данные time-position-velosity
-	foreach($buf['tpv'] as $device) {
-		//echo "<br>device=<pre>"; print_r($device); echo "</pre>\n";
-		//if(!in_array($device['device'],$devicePresent)) continue; 	// это не то устройство, которое потребовали. Однако, в случае gpsdPROXY или каскадного соединения gpsd здесь будет оригинальное устройство, сгенерировавшее данный, а в $devicePresent -- устройство, от которого данные получены. И будет неправильный облом.
-		if($device['time'])	$tpv[$device['time']] = $device; 	// askGPSD, с ключём - время
-		else {
-			$tpv[] = $device; 	// с ключём  - целым.
-		}
-		//echo "<br>device=<pre>"; print_r($device); echo "</pre>\n";
-	}
-	break;
-case $SEEN_AIS: 	// запросили только AIS
-	if($buf['ais']) $tpv = $buf['ais'];
-	else $tpv = array();
-	break;
-case $SEEN_GPS | $SEEN_AIS: 	// запросили TPV _И_ AIS (по | биты выставлени и там и там)
-	foreach($buf['tpv'] as $device) {
-		if($device['time'])	$tpv['tpv'][$device['time']] = $device; 	// askGPSD, с ключём - время
-		else {
-			$tpv['tpv'][] = $device; 	// с ключём  - целым.
-		}
-	}
-	if($buf['ais']) $tpv['ais'] = $buf['ais'];
-	else $tpv['ais'] = array();
-	break;
-}
+foreach($dataTypes as $dataType){
+	$tpv[$dataType] = $buf[$dataType];
+};
 //echo "Данные askGPSD <pre>"; print_r($tpv); echo "</pre>\n";
 return $tpv;
 } // end function askGPSD
 
 
-function getPosAndInfo($host='',$port=NULL,$dataType=0x01) { 
+function getPosAndInfo($host='',$port=NULL,$dataTypes=array('tpv')) { 
 /* Собирает информацию с подключенных датчиков ГПС, etc. - что умеет gpsd или SignalK
 */
 if(is_array($host)) { 	// спрашивать у SignalK
 	//error_log("fGPSD.php getPosAndInfo: will ask spatial info from SignalK");
-	$TPV = getPosAndInfoFromSignalK($host,$dataType);
+	$TPV = getPosAndInfoFromSignalK($host,$dataTypes);
 }
 elseif($host and $port) { 	// спрашивать у gpsd
 	//error_log("fGPSD.php getPosAndInfo: will ask spatial info from gpsd");
-	$TPV = getPosAndInfoFromGPSD($host,$port,$dataType);
-	if(isset($TPV['error'])) {
-		$TPV = getPosAndInfoFromSignalK(NULL,$dataType);
-	}
+	$TPV = getPosAndInfoFromGPSD($host,$port,$dataTypes);
+	if(isset($TPV['error'])) {	// при этом $TPV['tpv']['error'] проверять не будем, чтобы ais и mob.
+		$TPV = getPosAndInfoFromSignalK(NULL,$dataTypes);
+	};
 }
 else { 	// попробуем найти SignalK
-	$TPV = getPosAndInfoFromSignalK(NULL,$dataType);
-}
+	$TPV = getPosAndInfoFromSignalK(NULL,$dataTypes);
+};
 return $TPV;
-} // end function getPosAndInfo
+}; // end function getPosAndInfo
 
 
-function getPosAndInfoFromGPSD($host='localhost',$port=2947,$dataType=0x01) { 
-/* Получает данные типа $dataType от gpsd
+function getPosAndInfoFromGPSD($host='localhost',$port=2947,$dataTypes=array('tpv')) { 
+/* Получает данные типа $dataTypes от gpsd
 Возвращает плоский (без устройств) массив (объединяя информацию tpv от устройств оптимальным образом), 
-если не требуется и $SEEN_GPS и $SEEN_AIS. Тогда массив с ключами tpv и ais
+с ключами $dataTypes
 При неудаче -- массив с ключём 'error'
 */
 //error_log("fGPSD.php getPosAndInfoFromGPSD: asking spatial info from gpsd");
-$SEEN_GPS = 0x01; $SEEN_AIS = 0x08;
-$gpsdData = askGPSD($host,$port,$dataType);
+$gpsdData = askGPSD($host,$port,$dataTypes);
 //echo "<br>getPosAndInfoFromGPSD=<pre>"; print_r($gpsdData); echo "</pre>\n";
 if(is_string($gpsdData)) {
     $gpsdData = array('error' => $gpsdData); 	// 
     return $gpsdData;
 }
 $tpv = array();
-switch($dataType) {
-case $SEEN_GPS:
-	krsort($gpsdData); 	// отсортируем по времени к прошлому
-	foreach($gpsdData as $device) {
+if($gpsdData['tpv']){
+	foreach($gpsdData['tpv'] as $device) {
+		if($device['time'])	$tpv[$device['time']] = $device; 	// с ключём - время
+		else $tpv[] = $device; 	// с ключём  - целым.
+	};
+	krsort($tpv); 	// отсортируем по времени к прошлому
+	$gpsdData['tpv'] = $tpv;
+	$tpv = array();
+	foreach($gpsdData['tpv'] as $device) {
 		//echo "<br>device=<pre>"; print_r($device); echo "</pre>\n";
 		if($device['mode'] == 3) { 	// последний по времени 3D fix - других координат не надо, но может быть информация от других устройств
 			foreach($device as $key => $value){
 				if($key == 'track') $key = 'course'; 	// course -- это "путевой угол", "путь", т.е. track
 				$tpv[$key] = $value;
-			}
+			};
 		}
 		else { 	// просмотрим остальные устройства
 			foreach($device as $key => $value){
 				if($key == 'track') $key = 'course';
 				if(!isset($tpv[$key])) $tpv[$key] = $value;
-			}
-		} 	// 
-	}
+			};
+		};
+	};
 	if(!isset($tpv['lat']) or !isset($tpv['lon'])){ 	// координат нет, потому что не было ни одного готового устройства
 		$tpv = array('error' => 'no fix from any devices'); 	// ничего нет, облом
-	}
-	break;
-case $SEEN_AIS:
-	$tpv = $gpsdData;
-	break;
-case $SEEN_GPS | $SEEN_AIS: 	// запросили TPV _И_ AIS (по | биты выставлени и там и там)
-	//echo "<br>SEEN_GPS | SEEN_AIS=<pre>"; print_r($gpsdData); echo "</pre>\n";
-	$tpv['ais'] = $gpsdData['ais'];
-	$gpsdData = $gpsdData['tpv'];
-	krsort($gpsdData); 	// отсортируем по времени к прошлому
-	$lat=0; $lon=0; $heading=0; $speed=0;
-	$tpv1 = array();
-	foreach($gpsdData as $device) {
-		//echo "<br>device=<pre>"; print_r($device); echo "</pre>\n";
-		if($device['mode'] == 3) { 	// последний по времени 3D fix - других координат не надо, но может быть информация от других устройств
-			foreach($device as $key => $value){
-				$tpv1[$key] = $value;
-			}
-		}
-		else { 	// просмотрим остальные устройства
-			foreach($device as $key => $value){
-				if(!isset($tpv1[$key])) $tpv1[$key] = $value;
-			}
-		} 	// 
-	}
-	if(!isset($tpv1['lat']) or !isset($tpv1['lon'])){ 	// координат нет, потому что не было ни одного готового устройства
-		$tpv1 = array('error' => 'no fix from any devices'); 	// ничего нет, облом
-	}
-	$tpv['tpv'] = $tpv1;	
-	break;
-}
-//echo "Получены данные getPosAndInfoFromGPSD <pre>"; print_r($tpv); echo "</pre>\n";
-return $tpv;
+	};
+	$gpsdData['tpv'] = $tpv;
+};
+//echo "Получены данные getPosAndInfoFromGPSD <pre>"; print_r($gpsdData); echo "</pre>\n";
+return $gpsdData;
 } // end function getPosAndInfoFromGPSD
 
 
-function getPosAndInfoFromSignalK($server=array(),$dataType=0x01) { 
-/* Получает данные типа $dataType от SignalK 
-Возвращает плоский массив
-если не требуется и $SEEN_GPS и $SEEN_AIS. Тогда массив с ключами tpv и ais
+function getPosAndInfoFromSignalK($server=array(),$dataTypes=array('tpv')) { 
+/* Получает данные типа $dataTypes от SignalK 
+Возвращает массив с ключами $dataTypes
 При неудаче -- массив с ключём 'error'
 
 Серверы SignslK через какое-то время перестают быть видимыми через zeroconf, хотя, вроде, работают.
 Поэтому обнаружение их никак не гарантируется.
 */
 global $spatialProvider;
-$SEEN_GPS = 0x01; $SEEN_AIS = 0x08;
 //error_log("fGPSD.php getPosAndInfoFromSignalK: asking spatial info from SignalK");
 $serversDirName = sys_get_temp_dir().'/signalK';
 $serversName = $serversDirName.'/signalKservers';
@@ -266,7 +217,7 @@ if(!$findServers) {
 									'port' => $server[1],
 									'self' => $self
 								);
-		}
+		};
 	}
 	else {
 		//error_log("fGPSD.php getPosAndInfoFromSignalK: search SignalK services");
@@ -286,36 +237,36 @@ if(!$findServers) {
 					if(substr($l1,1,5) == 'self=') { 	// там кавычки
 						$selfStr = substr(trim($l1,'"'),5);
 						break;
-					}
-				}
+					};
+				};
 				$server['self'] = $selfStr;
 				$findServers[$selfStr] = $server;
-			}
+			};
 		}
 		else {
 			$self = json_decode(@file_get_contents("http://localhost:3000/signalk/v1/api/self"),TRUE);
 			if(substr($self,0,8)=='vessels.') {
 				$self = substr($self,9);
 				$findServers = array();
-				$findServers[$self] = array(	'host' => $server[0], 
+				$findServers[$self] = array('host' => $server[0], 
 										'port' => $server[1],
 										'self' => $self
 									);
-			}
-		}
-	}
-}
+			};
+		};
+	};
+};
 if(!$findServers) {
 	$TPV = array('error' => 'no any Signal K resources found'); 	// ничего нет, облом
 	return $TPV;
-}
+};
 //error_log("fGPSD.php getPosAndInfoFromSignalK: SignalK services found!");
 //echo "findServers <pre>"; print_r($findServers); echo "</pre><br>\n";
 // Серверы обнаружены
 $spatialProvider = 'signalk-server';
-$TPV = array();
-switch($dataType) {
-case $SEEN_GPS:
+$TPV = array(); 
+$spatialInfo = array();
+if(in_array('tpv',$dataTypes)){
 	foreach($findServers as $serverID => $server){
 		$signalkDiscovery = json_decode(file_get_contents("http://{$server['host']}:{$server['port']}/signalk"),TRUE);
 		if(! $signalkDiscovery) { 	// нет сервера, нет связи, и т.п.
@@ -345,7 +296,7 @@ case $SEEN_GPS:
 		if($vessel['environment']['depth']['belowSurface']) $TPV['depth'] = $vessel['environment']['depth']['belowSurface']['value'];
 		elseif($vessel['environment']['depth']['belowTransducer']) $TPV['depth'] = $vessel['environment']['depth']['belowTransducer']['value'];
 		$spatialInfo[$timestamp] = $TPV;
-	}
+	};
 	krsort($spatialInfo); 	// отсортируем по времени к прошлому
 	$TPV = array();
 	$i = 0;
@@ -354,22 +305,26 @@ case $SEEN_GPS:
 		if($i) {
 			foreach($device as $key => $value){
 				if(!isset($TPV[$key])) $TPV[$key] = $value;
-			}
+			};
 		}
 		else {
 			foreach($device as $key => $value){
 				$TPV[$key] = $value;
-			}
-		}
-	}
-	break;
-case $SEEN_AIS:
+			};
+		};
+	};
+	$spatialInfo = array();
+	$spatialInfo['tpv'] = $TPV;
+};
+	
+if(in_array('ais',$dataTypes)){
+	$TPV = array(); 
 	foreach($findServers as $serverID => $server){
 		$signalkDiscovery = json_decode(file_get_contents("http://{$server['host']}:{$server['port']}/signalk"),TRUE);
 		if(! $signalkDiscovery) { 	// нет сервера, нет связи, и т.п.
 			unset($findServers[$serverID]);
 			continue;
-		}
+		};
 		//print_r($http_response_header);
 		//echo "server <pre>"; print_r($server); echo "</pre><br>\n";
 		//echo "signalkDiscovery<pre>"; print_r($signalkDiscovery); echo "</pre><br>\n";
@@ -403,18 +358,18 @@ case $SEEN_AIS:
 			if($vessel['design']['beam']['value'])$TPV[$vesselID]['beam'] = $vessel['design']['beam']['value'];
 			if($vessel['communication']['value']['netAIS'])$TPV[$vesselID]['netAIS'] = TRUE;
 			//echo "TPV[$vesselID]<pre>"; print_r($TPV[$vesselID]); echo "</pre><br>\n";
-		}
-	}
-	break;
-}
+		};
+	};
+	$spatialInfo['ais'] = $TPV;
+};
 
 //echo "Write findServers:"; print_r($findServers); echo "\n";
 if($serversCount != count($findServers)){
 	file_put_contents($serversName,serialize($findServers));
 	@chmod($serversName,0666); 	// если файла не было
 }
-//echo "TPV<pre>"; print_r($TPV); echo "</pre><br>\n";
-return $TPV;
+//echo "spatialInfo<pre>"; print_r($spatialInfo); echo "</pre><br>\n";
+return $spatialInfo;
 } // end function getPosAndInfoFromSignalK
 
 

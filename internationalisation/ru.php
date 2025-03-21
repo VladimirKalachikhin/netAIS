@@ -2,15 +2,14 @@
 $title = 'Управление netAIS';
 $myGroupNameTXT = 'Моя группа';
 
-$serverTXT = 'Своя группа netAIS:';
+$serverTXT = 'Своя группа netAIS';
 $serverOffTXT = ' не запущена';
-$serverOnTXT1 = " работает, адрес: <input type='text' value='";
-$serverOnTXT2 = "' style='font-size:110%;'>";
-$serverErrTXT = ' СБОЙ - не запущена служба tor или не сконфигурирован сервис onion.';
-$serverErrTXT1 = ' СБОЙ - не запущена служба tor';
-$serverErrTXT2 = ' СБОЙ - неизвестная причина. Права?';
+$serverOnTXT = "работает.";
+$torErrTXT = ' СБОЙ: требуется служба TOR, но эта служба не работает.';
+$yggdrasilErrTXT = 'СБОЙ: требуется служба Yggdrasil, но эта служба не работает.';
+$serverErrTXT = ' СБОЙ - неизвестная причина. Права?';
 
-$serverPlaceholderTXT = 'Нужно! .onion адрес';
+$serverPlaceholderTXT = 'Нужно! Сетевой адрес';
 $serverNamePlaceholderTXT = 'Понятное наименование';
 $serverDescrPlaceholderTXT = 'Краткое описание';
 

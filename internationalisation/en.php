@@ -4,11 +4,10 @@ $myGroupNameTXT = 'My group';
 
 $serverTXT = 'You netAIS group:';
 $serverOffTXT = ' closed';
-$serverOnTXT1 = " open, address: <input type='text' value='";
-$serverOnTXT2 = "' size='22' style='font-size:110%;'>";
-$serverErrTXT = ' ERR - TOR service not found or onion resource not configure.';
-$serverErrTXT1 = ' ERR - TOR service not found';
-$serverErrTXT2 = ' ERR - unknown. Rights?';
+$serverOnTXT = " open.";
+$torErrTXT = ' ERR: the TOR service is required, but this service is not working.';
+$yggdrasilErrTXT = 'ERR: the Yggdrasil service is required, but this service is not working.';
+$serverErrTXT = ' ERR - unknown. Rights?';
 
 $serverPlaceholderTXT = 'Required! .onion address';
 $serverNamePlaceholderTXT = 'Clear name';

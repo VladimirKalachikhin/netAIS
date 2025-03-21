@@ -2,18 +2,22 @@
 ini_set('error_reporting', E_ALL & ~E_NOTICE & ~E_STRICT & ~E_DEPRECATED);
 //ini_set('error_reporting', E_ALL & ~E_STRICT & ~E_DEPRECATED);
 chdir(__DIR__); // задаем директорию выполнение скрипта
+//echo $_SERVER['PHP_SELF'];
 
-$version = ' v.1.6.0';
+$version = ' v.2.0.0';
 /*
 1.5.8 restart clients via cron
 1.5.2 work with SignalK
 1.5.1 work via gpsdPROXY simultaneously with saved data to file
 1.5.0 access by index.php, not by netAISserver.php. So it is possible .onion/?member... uri with common Apache2 config. Yes, for stupid NodeJS.
+
+Имеется три сущности:
+1) Собственное состояние
+2) Клиенты к другим серверам, которые передают собственное состояние и получают чужое
+3) Собственный сервер, который обменивается состояниями, включая, но не обязательно, собственное
 */
 require('fcommon.php'); 	// 
 require('params.php'); 	// 
-$netAISJSONfilesDir = getAISdFilesNames($netAISJSONfilesDir); 	// определим имя и создадим каталог для данных netAIS
-$serversListFileName = 'server/serversList.csv'; 	// list of available servers
 
 // Интернационализация
 // требуется, чтобы языки были перечислены в порядке убывания предпочтения
@@ -32,8 +36,12 @@ if(!$res) {
 	@include("internationalisation/en.php");
 }
 
-//echo $_SERVER['PHP_SELF'];
-clearstatcache(TRUE,$selfStatusFileName); 	// from params.php
+$netAISJSONfilesDir = getAISdFilesNames($netAISJSONfilesDir); 	// определим имя и создадим каталог для данных netAIS
+$serversListFileName = 'server/serversList.csv'; 	// list of available servers, именно здесь, потому что этот каталог не на временной файловой системе
+// Это не в session для того, чтобы у всех юзеров были одни и те же данные.
+$servers = getServersList();
+$selfStatusFileName = 'server/selfStatus'; 	//  array, 0 - Navigational status, 1 - Navigational status Text. место, где хранится состояние клиента
+clearstatcache(TRUE,$selfStatusFileName); 	// 
 if(($selfStatusTimeOut !== 0) and ((time() - @filemtime($selfStatusFileName)) > $selfStatusTimeOut)) $status = array(); 	// статус протух
 else $status = unserialize(@file_get_contents($selfStatusFileName)); 	// считаем файл состояния
 if(!$status) {
@@ -41,77 +49,65 @@ if(!$status) {
 	$status['status']=15; 	// Navigational status 0 = under way using engine, 1 = at anchor, 2 = not under command, 3 = restricted maneuverability, 4 = constrained by her draught, 5 = moored, 6 = aground, 7 = engaged in fishing, 8 = under way sailing, 9 = reserved for future amendment of navigational status for ships carrying DG, HS, or MP, or IMO hazard or pollutant category C, high speed craft (HSC), 10 = reserved for future amendment of navigational status for ships carrying dangerous goods (DG), harmful substances (HS) or marine pollutants (MP), or IMO hazard or pollutant category A, wing in ground (WIG);11 = power-driven vessel towing astern (regional use), 12 = power-driven vessel pushing ahead or towing alongside (regional use); 13 = reserved for future use, 14 = AIS-SART (active), MOB-AIS, EPIRB-AIS 15 = undefined = default (also used by AIS-SART, MOB-AIS and EPIRB-AIS under test)
 	$status['description']='';
 	$_REQUEST['statusUpdated'] = 1;
-}
+};
+$selfMOBfileName = 'server/selfMOB'; 	//  array, 0 - Navigational status, 1 - Navigational status Text. место, где хранится состояние клиента
+$statusMOB = unserialize(@file_get_contents($selfMOBfileName)); 	// считаем файл MOB, которого может не быть
+//echo "MOB:<pre>";print_r($statusMOB);echo "</pre><br>\n";
+$selfVehicle = getSelfParms(); 	// базовая информация о себе: название, позывные, etc. Плоский список, аналошичный списку сведений AIS
+/*
+$greeting = '{"class":"VERSION","release":"netAISclient","rev":"1","proto_major":5,"proto_minor":3}'; 	// приветствие для gpsdPROXY
+$SEEN_GPS = 0x01; $SEEN_AIS = 0x08;
+$netAISdevice = array(
+'class' => 'DEVICE',
+'path' => 'netAISccontrol',
+'activated' => date('c'),
+'flags' => $SEEN_AIS,
+'stopbits' => 1
+);
+*/
 //echo "_REQUEST <pre>";print_r($_REQUEST);echo "</pre><br>\n";
 //echo "status <pre>";print_r($status);echo "</pre><br>\n";
 
 // Сервер
-// Определим наличие tor
-//exec("netstat -an | grep LISTEN | grep $torPort",$psList); 	// exec будет ждать завершения
-exec("netstat -an | grep $torPort",$psList); 	// exec будет ждать завершения
-$torRun = strpos(implode("\n",$psList),'LISTEN');
-//echo "torRun=$torRun; exec return <pre>";print_r($psList);echo "</pre><br>\n";
-if(!$onion) @unlink('server/netAISserver.php'); 	// в конфиге не указан адрес скрытого сервиса -- сервер не может быть включен
-// Возьмём список серверов: csv адрес,запущен,название, комментарий
-$servers = array();
-if (($handle = @fopen($serversListFileName, "r")) !== FALSE) {
-	while (($server = fgetcsv($handle, 1000, ",")) !== FALSE) {
-		if((!$server) or (count($server) < 4)) continue; 	// пустые и кривые строки
-		if(!trim($server[0])) {
-			$servers[] = $server; 	// строки - комментарии
-			continue;
-		}
-		if(!$server[2]) $server[2] = parse_url($server[0], PHP_URL_HOST);
-		$servers[$server[0]] = $server;
-	}
-	fclose($handle);
-	//echo "<pre>"; print_r($servers); echo "</pre>\n";
-}
-// Определим включённость сервера
-//clearstatcache(TRUE,'server/netAISserver.php');
-//$serverOn = file_exists('server/netAISserver.php');
-clearstatcache(TRUE,'server/index.php');
-$serverOn = file_exists('server/index.php');
+// Указание, каким образом предполагается обращаться к вашему серверу.
+// Нужно только для проверки наличия транспорта на компьютере.
+// Specifies how your server to be accessed.
+// It is only necessary to check the availability of transport on the computer.
+$selfTransport = array('Yggdrasil');
+//$selfTransport = array();
+$selfTransport = array_fill_keys($selfTransport,false);	// 
+if($torHost) $selfTransport['TOR']=true;	// params.php
+if(isset($selfTransport['TOR'])) $selfTransport['TOR'] = checkTOR();
+if(isset($selfTransport['Yggdrasil'])) $selfTransport['Yggdrasil'] = checkYgg();
+//echo "selfTransport:<pre>"; print_r($selfTransport); echo "</pre>\n";
 
-
-$str = ""; 	// переменная часть сообщения в каждой секции
 // Обработка запроса 
-// вкл/выкл сервера
+$str = ""; 	// переменная часть сообщения в каждой секции
+// вкл/выкл собственного сервера
 if($_REQUEST['stopServer']) { 	
-	@unlink('server/netAISserver.php'); 	// 
 	@unlink('server/index.php'); 	// 
-	$str = $serverOffTXT;
 	$serverOn = FALSE;
-	if($servers[$onion]) $servers[$onion][1] = 0; 	// укажем, что клиент к своему серверу должен быть остановлен
+	if(isset($servers[$selfServer])) $servers[$selfServer][1] = 0; 	// укажем, что клиент к своему серверу должен быть остановлен
 	//echo "Server stopped<br>\n";
 }
 elseif($_REQUEST['startServer']) {
-	@unlink('server/netAISserver.php'); 	// 
 	@unlink('server/index.php'); 	// 
-	$serverOn = FALSE;
-	if($torRun and $onion) {
-		$serverOn = serverStart();
-		if($serverOn) {
-			if(!$servers[$onion]) $servers[$onion] = array($onion,0,$onion,$myGroupNameTXT);
-			$servers[$onion][1] = 1; 	// укажем, что клиент к своему серверу должен быть запущен
-		}
-		else $str = $serverErrTXT2;
-	}
-	else  $str = $serverErrTXT; 	// СБОЙ - не запущена служба tor или не сконфигурирован сервис onion.
+	$serverOn = serverStart();	// сервер запустим в любом случае, потому что мы не знаем, с каким транспортом кроме указанных он работает
+	if(!$serverOn) $str = $serverErrTXT;
+	if(!$servers[$selfServer]) $servers[$selfServer] = array($selfServer,0,$myGroupNameTXT,'');
 	//echo "Server started<br>\n";
 }
-// редактор списка серверов
+// редактор списка серверов групп, в которых участвуем:
 elseif($_REQUEST['editClient']) { 	
 	//echo $_REQUEST['server'];
 	$servers[$_REQUEST['server']][2] = $_REQUEST['serverName'];
 	$servers[$_REQUEST['server']][3] = $_REQUEST['serverDescription'];
 }
 elseif($_REQUEST['delClient']) { 	
-	
-	if($_REQUEST['server'] <> $onion) { 	// удалить клиента к своему серверу нельзя
+	if($_REQUEST['server'] != $selfServer) { 	// удалить клиента к своему серверу нельзя
 		killClient($_REQUEST['server']); 	// потому, что для удаляемой записи мог быть запущен клиент.
 		unset($servers[$_REQUEST['server']]);
-	}
+	};
 }
 elseif($_REQUEST['addClient']) {
 	$serverURL = filter_input(INPUT_GET, 'server', FILTER_SANITIZE_URL);
@@ -127,19 +123,13 @@ elseif($_REQUEST['stopClient']) { 	// собственно запуск/оста
 }
 elseif($_REQUEST['startClient']) { 	// 
 	$servers[$_REQUEST['server']][1] = 1;
-	if($_REQUEST['server'] == $onion) { 	// указан клиент к своему серверу
+	if($_REQUEST['server'] == $selfServer) { 	// указан клиент к своему серверу
 		if(!$serverOn) { 	// сервер сейчас не запущен
-			if($torRun and $onion) {
-				$serverOn = serverStart();
-				if(!$serverOn) $str = $serverErrTXT2;
-			}
-			else  {
-				$str = $serverErrTXT; 	//  СБОЙ - не запущена служба tor или не сконфигурирован сервис onion.
-				$servers[$onion][1] = 0; 	// 
-			}
+			$serverOn = serverStart();
+			if(!$serverOn) $str = $serverErrTXT;
 			//echo "Server started<br>\n";
-		}
-	}
+		};
+	};
 }
 // изменение статуса
 elseif($_REQUEST['criminalAlert']){
@@ -162,18 +152,36 @@ elseif($_REQUEST['wreckAlert']){
 	$status['description']=$AISstatus14wreckTXT;
 	$status['safety_related_text']='Our vessel is sinking!';
 }
+elseif($_REQUEST['mobAlert']){
+	if($statusMOB["status"]){	// экран же не обновляется, и к моменту нажатия кнопки режим MOB может быть уже прекращён. Не следует здесь начинать его снова.
+		// Подпишем точку сообщением из своего статуса.
+		// А надо ли это?
+		foreach($statusMOB['points'] as &$point){
+			if($point['mmsi'] != $selfVehicle['mmsi']) continue;
+			if($point['current']) {	// подпишем только текушую точку
+				$point['safety_related_text'] = $status['description'];
+				break;
+			};
+		};
+		$statusMOB['timestamp'] = time();	// собственно, основное: обновим метку времени, чтобы все клиенты перерисовали этот MOB у себя.
+		//echo "MOB alert!:<pre>";print_r($statusMOB);echo "</pre><br>\n";
+		file_put_contents($selfMOBfileName,serialize($statusMOB)); 	// сохраним статус MOB
+		clearstatcache(TRUE,$selfMOBfileName); 	//
+	};
+}
 elseif($_REQUEST['vehacleStatus'] or $_REQUEST['vehicleDescription'] or ($_REQUEST['vehacleStatus']=='0')) { 	// 
 	//echo "vehacleStatus={$_REQUEST['vehacleStatus']}; vehicleDescription={$_REQUEST['vehicleDescription']};<br>\n";
 	$status['status']=(int)$_REQUEST['vehacleStatus']; 	// 
 	$status['description']=$_REQUEST['vehicleDescription'];
+	$status['safety_related_text']=null;
 }
 elseif($_REQUEST['destinationCommonName'] or ($_REQUEST['destinationCommonName'] === '') or $_REQUEST['destinationETA'] or ($_REQUEST['destinationETA']==='')) { 	// 
 	//echo "destinationCommonName={$_REQUEST['destinationCommonName']}; destinationETA={$_REQUEST['destinationETA']};<br>\n";
 	$status['destination']=$_REQUEST['destinationCommonName']; 	// 
 	$status['eta']=$_REQUEST['destinationETA'];
-}
+}; // конец обработки запроса
 
-if($_REQUEST) { 	// возможно, были изменения
+if($_REQUEST) { 	// возможно, были изменения. Это, типа, псевдосессия, но одна на всех, чтобы у всех юыли одинаковые данные.
 	$handle = fopen($serversListFileName, "w"); 	// сохраним список серверов
 	foreach($servers as $server){
 		fputcsv($handle,$server);
@@ -182,23 +190,25 @@ if($_REQUEST) { 	// возможно, были изменения
 	//echo "<pre>"; print_r($status); echo "</pre>\n";
 	file_put_contents($selfStatusFileName,serialize($status)); 	// сохраним статус
 }
-//echo "<pre>"; print_r($status); echo "</pre>\n";
+//echo "status: <pre>"; print_r($status); echo "</pre>\n";
+//echo "servers: <pre>"; print_r($servers); echo "</pre>\n";
 
-runClients(); 	// запустим\проверим клиентов для каждого сервера
+runClients(); 	// запустим\проверим клиентов для каждого сервера групп, в которых участвуем
 
+// Определим включённость сервера
+clearstatcache(TRUE,'server/index.php');
+$serverOn = file_exists('server/index.php');
 if($serverOn) {
-	$img = "src='img/serverRun.svg' alt='STOP'";
-	$name = 'stopServer';
-	if($torRun) { 	// команд не было, просто релоад, и обнаружилось, что tor умер
-		if(!$str) $str = $serverOnTXT1.$onion.$serverOnTXT2;
-	}
-	else $str = $serverErrTXT1; 	// СБОЙ - не запущена служба tor
+	$buttonImg = "src='img/serverRun.svg' alt='STOP'";
+	$buttonName = 'stopServer';
+	$serverTXT .= " $serverOnTXT";
 }
 else { 
-	$img = "src='img/off.svg' alt='START'";
-	$name = 'startServer';
-	if(!$str) $str = $serverOffTXT;
-}
+	$buttonImg = "src='img/off.svg' alt='START'";
+	$buttonName = 'startServer';
+	$serverTXT .= " $serverOffTXT";
+};
+
 ?>
 <!DOCTYPE html >
 <html>
@@ -222,17 +232,32 @@ infoBox.innerText='width: '+window.innerWidth+' height: '+window.innerHeight;
 <div style = '
 	width:95%;
 	margin:0; padding:0;
+<?php // ?>
 	position: absolute;
 	top: 50%;
 	left: 50%;
-	transform: translate(-50%, -50%);'>
+	transform: translate(-50%, -50%);
+<?php // ?>
+	'
+>
 	<form id='server' style='padding:0.1rem;border:1px solid black;border-radius:5px;' action='<?php echo $_SERVER['PHP_SELF'];?>'>
 		<table>
 			<tr>
-				<td style='width:100%;'><?php echo "$serverTXT $str";?></td>
+				<td style='width:100%;'><?php 
+echo "$serverTXT $str";
+if($serverOn){
+	if(isset($selfTransport['TOR']) and $selfTransport['TOR']===false) {// Если указано, что транспорт - TOR, но не удалась проверка наличия TOR.
+		echo "<br><span style='font-size:75%;'>$torErrTXT</span>\n";
+	};
+	if(isset($selfTransport['Yggdrasil']) and $selfTransport['Yggdrasil']===false) {// Если указано, что транспорт - Yggdrasil, но не удалась проверка наличия Yggdrasil.
+		echo "<br><span style='font-size:75%;'>$yggdrasilErrTXT</span\n";
+	};
+};
+									?>
+				</td>
 				<td style='width:4rem;'>
-					<button type=submit name="<?php echo $name ?>" value='1' style='margin:0rem;padding:0;'>
-						<img <?php echo $img ?>  class='knob'>
+					<button type=submit name="<?php echo $buttonName ?>" value='1' style='margin:0rem;padding:0;'>
+						<img <?php echo $buttonImg ?>  class='knob'>
 					</button>
 				</td>
 			</tr>
@@ -241,61 +266,68 @@ infoBox.innerText='width: '+window.innerWidth+' height: '+window.innerHeight;
 	<div id='client' style='width:100%;height:53vh;margin:0.5rem 0 0.5rem 0;border:1px solid black;border-radius:5px;'>
 		<div style='height:65%;overflow:auto;padding:0.5rem;'>
 		<?php
-		//echo "torRun=$torRun;<br>";
-		if(!$torRun) echo $serverErrTXT1; 	// СБОЙ - не запущена служба tor
-		else {
-			foreach($servers as $url => $server) {
-				if(is_int($url)) continue; 	// строки - комментарии
+foreach($servers as $url => $server) {	// список подключенных групп
+	if(is_int($url)) continue; 	// строки - комментарии
+	$disable = false;
+	if(strrpos($url,'onion')!==false){
+		if(!$selfTransport['TOR']) $disable = $torErrTXT;
+	}
+	elseif((strpos($url,'[2')!==false) or (strpos($url,'[3')!==false)){
+		if(!$selfTransport['Yggdrasil']) $disable = $yggdrasilErrTXT;
+	};
 		?>
 			<form action='<?php echo $_SERVER['PHP_SELF'];?>' style='margin:0.5rem 0 0.5rem 0;'>
-			<input type='hidden' name='server' value='<?php echo $server[0] ?>'>
-			<table><tr>
-				<td>
-					<?php if($server[1]) { ?>
-					<button type='submit' name="stopClient" value='1' style='margin:0;padding:0;'>
-						<img src="img/clientRun.svg" alt="STOP"  class='knob'>
-					</button>
-					<?php } else { ?>
-					<button type=submit name="startClient" value='1' style='margin:0;padding:0;'>
-						<img src="img/off.svg" alt="START"  class='knob'>
-					</button>
-					<?php } ?>
-				</td>
-				<td>
-					<input type='text' name='serverName' size='17' value='<?php echo htmlentities($server[2],ENT_QUOTES); ?>' disabled style='font-size:90%;'>
-				</td>
-				<td style='width:100%'>
-					<textarea name='serverDescription' rows=2 disabled style='width:100%;font-size:75%;'>
-<?php echo htmlentities($server[3],ENT_QUOTES); ?>
-					</textarea>
-				</td>
-				<td>
-					<button type='button' name='editClient' value='1' style='margin:0;padding:0;'
-					onclick='
-						//console.log(this);
-						const form = this.closest("form");
-						// новая кнопка "удалить"
-						let but = form.querySelector("button"); 	// первый button в форме
-						but.firstElementChild.src="img/del.svg"; 	// сменим картинку
-						but.name = "delClient";
-						// включить поля ввода
-						form.querySelector("input[type=text]").disabled = false;
-						form.querySelector("textarea").disabled = false;
-						// новая кнопка "сохранить изменения"
-						event.preventDefault(); 	// submit не сработает
-						this.type="submit"; 	// сменим тип
-						this.firstElementChild.src="img/ok.svg"; 	// сменим картинку
-						this.onclick=null;
-					'
-					>
-						<img src="img/edit.svg" alt="EDIT" class='knob'>
-					</button>
-				</td>
-			</tr></table>
+				<input type='hidden' name='server' value='<?php echo $server[0] ?>'>
+				<table><tr>
+					<td>
+						<?php if($server[1]) { ?>
+						<button type='submit' name="stopClient" value='1' style='margin:0;padding:0;'>
+							<img src="img/clientRun.svg" alt="STOP"  class='knob'>
+						</button>
+						<?php } else { ?>
+						<button type=submit name="startClient" value='1' style='margin:0;padding:0;'>
+							<img src="img/off.svg" alt="START"  class='knob'>
+						</button>
+						<?php }; ?>
+					</td>
+					<td>
+						<input type='text' name='serverName' size='17' value='<?php echo htmlentities($server[2],ENT_QUOTES); ?>' disabled style='font-size:90%;'>
+					</td>
+					<td style='width:100%'>
+						<textarea name='serverDescription' rows=2 disabled style='width:100%;font-size:75%;'><?php 
+if($disable) echo htmlentities($disable,ENT_QUOTES);
+else echo htmlentities($server[3],ENT_QUOTES); 
+						?></textarea>
+					</td>
+					<td>
+						<button type='button' name='editClient' value='1' style='margin:0;padding:0;'
+							onclick='
+								//console.log(this);
+								const form = this.closest("form");
+								// новая кнопка "удалить"
+<?php if($server[0] != $selfServer){	// удалить клиента к своему серверу нельзя 
+?>
+								let but = form.querySelector("button"); 	// первый button в форме
+								but.firstElementChild.src="img/del.svg"; 	// сменим картинку
+								but.name = "delClient";
+<?php }; ?>
+								// включить поля ввода
+								form.querySelector("input[type=text]").disabled = false;
+								form.querySelector("textarea").disabled = false;
+								// новая кнопка "сохранить изменения"
+								event.preventDefault(); 	// submit не сработает
+								this.type="submit"; 	// сменим тип
+								this.firstElementChild.src="img/ok.svg"; 	// сменим картинку
+								this.onclick=null;
+							'
+						>
+							<img src="img/edit.svg" alt="EDIT" class='knob'>
+						</button>
+					</td>
+				</tr></table>
 			</form>
 		<?php
-			};
-		};
+};	// конец списка подключенных групп
 		?>
 		</div>
 		<form action='<?php echo $_SERVER['PHP_SELF'];?>' style='padding:0.5rem 0 0.5rem 0;'>
@@ -308,8 +340,7 @@ infoBox.innerText='width: '+window.innerWidth+' height: '+window.innerHeight;
 						<input type='text' name='serverName' placeholder='<?php echo $serverNamePlaceholderTXT ?>' size='17' style='font-size:90%;'>
 					</td>
 					<td style='width:100%'>
-						<textarea name='serverDescription' placeholder='<?php echo $serverDescrPlaceholderTXT ?>' rows=2 style='width:99%;font-size:75%;padding:0.5rem;'>
-						</textarea>
+						<textarea name='serverDescription' placeholder='<?php echo $serverDescrPlaceholderTXT ?>' rows=2 style='width:99%;font-size:75%;padding:0.5rem;'></textarea>
 					</td>
 					<td>
 						<button type=submit name="addClient" value='1' style='margin:0;padding:0;'>
@@ -333,7 +364,7 @@ infoBox.innerText='width: '+window.innerWidth+' height: '+window.innerHeight;
 		<button type=submit name="wreckAlert" value='1' style='margin:1rem;padding:0;width:15%;'>
 			<img src="img/shipwreck_danger.png" alt="Ship wreck alert!" class='knob'>
 		</button>
-		<button type=submit name="mobAlert" value='1' style='display:none;margin:1rem;padding:0;width:15%;'>
+		<button type=submit name="mobAlert" value='1' style='<?php if(!$statusMOB["status"]) echo 'display:none;';?>margin:1rem;padding:0;width:15%;'>
 			<img src="img/mob_marker.png" alt="The man is overboard!" class='knob'>
 		</button>
 	</form>
@@ -371,12 +402,23 @@ infoBox.innerText='width: '+window.innerWidth+' height: '+window.innerHeight;
 <?php
 
 
+
 function runClients() {
 /* для каждого url в $servers организует периодический запуск клиента */
 global $servers,$phpCLIexec,$netAISdHost,$netAISdPort,$netAISJSONfilesDir;
 $oneClientRun = 0;
 foreach($servers as $uri => $server) {
 	if(is_int($url)) continue; 	// строки - комментарии
+	// Проверим, есть ли требуемый транспорт
+	if(strrpos($server[0],'onion')!==false){
+		if(!isset($selfTransport['TOR'])) $selfTransport['TOR'] = checkTOR();
+		if(!$selfTransport['TOR']) $server[1] = false;
+	}
+	elseif((strpos($url,'[2')!==false) or (strpos($url,'[3')!==false)){
+		if(!isset($selfTransport['Yggdrasil'])) $selfTransport['Yggdrasil'] = checkYgg();
+		if(!$selfTransport['Yggdrasil']) $server[1] = false;
+	};
+	//echo "[runClients] selfTransport:<pre>"; print_r($selfTransport); echo "</pre>\n";
 	if($server[1]) { 	// запустим, он проверяет сам, запущен ли
 		//echo "Запускаем netAISclient для сервера {$server[2]}<br>\n";
 		exec("$phpCLIexec netAISclient.php -s$uri > /dev/null 2>&1 & echo $!",$psList); 	// exec не будет ждать завершения: & - daemonise; echo $! - return daemon's PID
@@ -385,13 +427,15 @@ foreach($servers as $uri => $server) {
 		// Запустим сервер сообщений AIS для тупых
 		if($netAISdHost) { 	// он проверяет сам, запущен ли
 			exec("$phpCLIexec netAISd.php > /dev/null 2>&1 & echo $!",$psList); 	// exec не будет ждать завершения: & - daemonise; echo $! - return daemon's PID
+			//echo "netAISd запущен, PID:"; print_r($psList);
 		}
 		exec("crontab -l | grep -v '".$phpCLIexec.' netAISclient.php -s'.$uri."'  | crontab -"); 	// удалим запуск клиента из cron
 		exec('(crontab -l ; echo "* * * * * '.$phpCLIexec.' netAISclient.php -s'.$uri.'") | crontab - '); 	// добавим запуск клиента в cron, каждую минуту
 	}
 	else { 	// убъём
 		killClient($uri);
-		$netAISJSONfileName = $netAISJSONfilesDir.$uri;
+		$netAISJSONfileName = $netAISJSONfilesDir.base64_encode($uri);
+		//echo "netAISJSONfileName=$netAISJSONfileName;<br>\n";
 		@unlink($netAISJSONfileName); 	// если netAIS выключен -- файл с целями должен быть удалён, иначе эти цели будут показываться вечно
 		$oneClientRun -= 1;
 		exec("crontab -l | grep -v '".$phpCLIexec.' netAISclient.php -s'.$uri."'  | crontab -"); 	// удалим запуск клиента из cron
@@ -406,9 +450,18 @@ if($netAISdHost and ($oneClientRun < 1)) { 	// остановим сервер �
 
 function killClient($uri) {
 global $phpCLIexec; 	// from params.php
+// Казлы из PHP ниасилили разбор адреса .onion в функции parse_url
+// Поэтому здесь костыли для выделения собственно адреса для дальнейшего убивания процесса.
+// Я знаю о существовании pkill, но на OpenWRT его нет(?)
+if(substr($uri,0,4) != 'http') $uri = 'http://'.$uri;
+//echo 'host=<pre>';print_r(parse_url($uri)); echo ";</pre>\n";
+//echo 'host='.parse_url($uri, PHP_URL_HOST).";<br>\n";
+//echo 'host=<pre>';print_r(pathinfo($uri)); echo ";</pre>\n";
+$uri = trim(parse_url($uri, PHP_URL_HOST),'[]');
+
 exec("ps -A w | grep '$uri'",$psList);
 if(!$psList) exec("ps w | grep '$uri'",$psList); 	// for OpenWRT. For others -- let's hope so all run from one user
-//echo "res=$res ps w | grep '$uri':<pre>"; print_r($psList); echo "</pre><br>\n";
+//echo "[killClient] exec uri=$uri;<br>"; //echo "<pre>"; print_r($psList); echo "</pre><br>\n";
 foreach($psList as $str) {
 	$str = explode(' ',trim($str)); 	// массив слов
 	$pid = $str[0];
@@ -436,7 +489,7 @@ function serverStart(){
 //$serverName = 'netAISserver.php';
 $serverName = 'index.php';
 chdir('server');
-@unlink('netAISserver.php');
+@unlink('netAISserver.php'); 	// для совместимости со старыми версиями. Теперь это называется server/index.php
 @unlink('index.php');
 symlink('../netAISserver.php',$serverName);
 chdir('..');
@@ -446,5 +499,49 @@ clearstatcache(TRUE,"server/$serverName");
 $serverOn = file_exists("server/$serverName");
 return $serverOn;
 } // end function serverStart
+
+function checkTOR(){
+/* Определим наличие tor */
+global $torPort;	// params.php
+//exec("netstat -an | grep LISTEN | grep $torPort",$psList); 	// exec будет ждать завершения
+exec("netstat -an | grep $torPort",$psList); 	// exec будет ждать завершения
+$torRun = strpos(implode("\n",$psList),'LISTEN');
+//echo "torRun=$torRun; exec return <pre>";print_r($psList);echo "</pre><br>\n";
+if($torRun===false) return false;
+else return true;
+}; // end function checkTOR
+
+/*
+function checkYgg(){
+// For PHP >= 7.3, or: ip -6 addr | grep -oP '(?<=inet6\s)([a-f0-9:]+)(?=/)' 
+$ygg = false;
+foreach(net_get_interfaces() as $intName => $interface){	// ищем свой адрес Yggdrasil
+	if(substr($intName,0,3)!='tun') continue;	//	интерфейс должен быть туннель
+	if(!$interface['up']) continue;	// интерфейс должен быть поднят
+	foreach($interface['unicast'] as $addr){
+		if(substr($addr['address'],0,3)=='201'){	// собственный адрес Yggdrasil
+			$ygg = true;
+			break 2;
+		};
+	};
+};
+return $ygg;
+}; // end function checkYgg()
+*/
+function checkYgg(){
+// For PHP < 7.3 
+//ip -6 addr | grep -oP "(?<=inet6\s)([a-f0-9:]+)(?=/)"
+$ygg = false;
+exec('ip -6 addr | grep -oP "(?<=inet6\s)([a-f0-9:]+)(?=/)"',$interfaces);
+//echo "[checkYgg] interfaces:<pre>"; print_r($interfaces); echo "</pre>\n";
+foreach($interfaces as $addr){
+	// собственный адрес Yggdrasil. Они теперь ваще просто с 2 начинаются, а во внутренней сети - с 3.
+	if($addr[0]=='2' or $addr[0]=='3'){	
+		$ygg = true;
+		break;
+	};
+};
+return $ygg;
+}; // end function checkYgg()
 ?>
 
