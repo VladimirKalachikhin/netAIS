@@ -4,7 +4,7 @@ ini_set('error_reporting', E_ALL & ~E_NOTICE & ~E_STRICT & ~E_DEPRECATED);
 chdir(__DIR__); // задаем директорию выполнение скрипта
 //echo $_SERVER['PHP_SELF'];
 
-$version = ' v.2.0.0';
+$version = ' v.2.0.1';
 /*
 1.5.8 restart clients via cron
 1.5.2 work with SignalK
@@ -429,7 +429,9 @@ foreach($servers as $uri => $server) {
 			exec("$phpCLIexec netAISd.php > /dev/null 2>&1 & echo $!",$psList); 	// exec не будет ждать завершения: & - daemonise; echo $! - return daemon's PID
 			//echo "netAISd запущен, PID:"; print_r($psList);
 		}
-		exec("crontab -l | grep -v '".$phpCLIexec.' netAISclient.php -s'.$uri."'  | crontab -"); 	// удалим запуск клиента из cron
+		//echo "Удаляем из cron:<br><pre>"."crontab -l | grep -v '".$phpCLIexec.' netAISclient.php -s'.str_replace(array('[',']'),array('\[','\]'),$uri)."'  | crontab -"."</pre><br>\n";
+		exec("crontab -l | grep -v '".$phpCLIexec.' netAISclient.php -s'.str_replace(array('[',']'),array('\[','\]'),$uri)."'  | crontab -"); 	// удалим запуск клиента из cron
+		//echo "Добавляем в cron:<br><pre>".'(crontab -l ; echo "* * * * * '.$phpCLIexec.' netAISclient.php -s'.$uri.'") | crontab - '."</pre><br>\n";
 		exec('(crontab -l ; echo "* * * * * '.$phpCLIexec.' netAISclient.php -s'.$uri.'") | crontab - '); 	// добавим запуск клиента в cron, каждую минуту
 	}
 	else { 	// убъём
@@ -438,7 +440,8 @@ foreach($servers as $uri => $server) {
 		//echo "netAISJSONfileName=$netAISJSONfileName;<br>\n";
 		@unlink($netAISJSONfileName); 	// если netAIS выключен -- файл с целями должен быть удалён, иначе эти цели будут показываться вечно
 		$oneClientRun -= 1;
-		exec("crontab -l | grep -v '".$phpCLIexec.' netAISclient.php -s'.$uri."'  | crontab -"); 	// удалим запуск клиента из cron
+		//echo "Удаляем из cron:<br><pre>"."crontab -l | grep -v '".$phpCLIexec.' netAISclient.php -s'.str_replace(array('[',']'),array('\[','\]'),$uri)."'  | crontab -"."</pre><br>\n";
+		exec("crontab -l | grep -v '".$phpCLIexec.' netAISclient.php -s'.str_replace(array('[',']'),array('\[','\]'),$uri)."'  | crontab -"); 	// удалим запуск клиента из cron
 	}
 }
 //echo "oneClientRun=$oneClientRun;<br>\n";

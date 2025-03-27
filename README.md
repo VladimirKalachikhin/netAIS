@@ -4,7 +4,7 @@
 ## v.2
 
 Exchange AIS-like messages via the Internet to watch position members of your private group. No need for a dedicated server with a real IP address.  
-Suitable for fishing, regatta and collective trips and water recreation.  
+Suitable for fishing, regatta, collective trips and water recreation.  
 
 ![scheme](screenshots/art.png)   
 The software is a set of daemons (servers) running on a user's computer under Linux OS. Software use [TOR](torproject.org) as a communication environment, so it works smoothly via mobile internet and public wi-fi. Spatial info gets from [gpsd](https://gpsd.io/) or [SignalK](https://signalk.org/).  
