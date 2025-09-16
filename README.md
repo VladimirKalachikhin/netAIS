@@ -10,6 +10,9 @@ Suitable for fishing, regatta, collective trips and water recreation.
 The software is a set of daemons (servers) running on a user's computer under Linux OS. Software use [TOR](torproject.org) as a communication environment, so it works smoothly via mobile internet and public wi-fi. Spatial info gets from [gpsd](https://gpsd.io/) or [SignalK](https://signalk.org/).  
 netAIS messages can be accepted via lan by any AIS-compatible device or software.
 
+This code is written without using AI, "best practices," OOP, and an IDE.
+
+
 ## Features
 * Service one private group.
 * Membership in any number of groups.
@@ -35,6 +38,9 @@ Public group for testing:
 **eqavt5cdur7vbzoejquiwviok4tfexy32sggxdxujm75uiljqi5g27ad.onion**  
 ~~All active group members are visible on [GaladrielMap](http://galadrielmap.hs-yachten.at/) [Live demo](http://130.61.159.53/map/)~~.  
 Unfortunately, the Oracle Inc. turned out to be a crook, so the demo does not work.
+
+There are several [ready-to-use images available](https://github.com/VladimirKalachikhin/GaladrielMap-Demo-image/) that include the netAIS. Usually, you should open the `/netAIS/` path.
+
 
 ## Compatibility
 Linux, PHP7. 
