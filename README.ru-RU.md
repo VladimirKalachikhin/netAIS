@@ -34,7 +34,7 @@
 
 ## Демо
 Общедоступная группа netAIS для тестовых целей:  
-**2q6q4phwaduy4mly2mrujxlhpjg7el7z2b4u6s7spghylcd6bv3eqvyd.onion**  
+**eqavt5cdur7vbzoejquiwviok4tfexy32sggxdxujm75uiljqi5g27ad.onion**  
 ~~Все активные участники группы видны в демонстрационной версии](http://130.61.159.53/map/) [GaladrielMap](https://hub.mos.ru/v.kalachihin/GaladrielMap)~~.  
 К сожалению, Oracle Inc оказались жуликами, поэтому демо не работает.
 

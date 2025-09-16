@@ -1,51 +1,19 @@
-@media (max-height: 255px) {
-	body {
-		font-size:12px;
-	}
-	img.knob {
-		width:16px;
-	}
+html {
+	--out-width: 98vmin; /* * 1% of the viewport's smaller dimension */
+	--font-size: calc(var(--out-width)/30);	/* https://developer.mozilla.org/en-US/docs/Web/CSS/CSS_containment/Container_queries */
+	/*--font-size: calc(11vmin);*/	/* https://developer.mozilla.org/en-US/docs/Web/CSS/CSS_containment/Container_queries */
+	--small-font-size: calc(var(--font-size)*0.75);	/* если сказать em, то величиной будет em, а не вычисленное в этот момент значение. Поэтому -- вычисляется */
+	--ltl-font-size: calc(var(--font-size)*0.5);
+	--pico-font-size: calc(var(--font-size)*0.3);
 }
-@media (min-height: 256px) and (max-height: 356px) {
-	body {
-		font-size:14px;
-	}
-	img.knob {
-		width:24px;
-	}
+body {
+	font-size:var(--font-size);
 }
-@media (min-height: 357px) and (max-height: 576px) { /* SONY Reader PRS-T1 800x562 */
-	body {
-		font-size:16px;
-	}
-	img.knob {
-		width:28px;
-	}
+
+img.knob {
+	width:calc(var(--font-size)*1.8);
 }
-@media (min-height: 577px) and (max-height: 743px) {
-	body {
-		font-size:20px;
-	}
-	img.knob {
-		width:38px;
-	}
-}
-@media (min-height: 744px) and (max-height: 899px) {
-	body {
-		font-size:25px;
-	}
-	img.knob {
-		width:52px;
-	}
-}
-@media (min-height: 900px) {
-	body {
-		font-size:35px;
-	}
-	img.knob {
-		width:74px;
-	}
-}
+
 .alarm {
     animation:blinkingText 1s infinite;
 }
@@ -53,5 +21,23 @@
     0%{     color: white;    }
     50%{    color: transparent; }
     100%{   color: white;    }
+}
+
+.withBorder {
+	border: solid black;
+	border-radius: calc(var(--out-width)*0.02);
+	margin: 0.1em;
+}
+
+#messageTXT {
+	position:absolute;
+	width:75%;
+	height:55%;
+	top:7%;
+	left:50%;
+	transform: translate(-50%, 0);
+	background-color: white;
+	font-size: var(--small-font-size);
+	padding: 1em;
 }
 

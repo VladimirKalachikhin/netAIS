@@ -4,8 +4,9 @@ ini_set('error_reporting', E_ALL & ~E_NOTICE & ~E_STRICT & ~E_DEPRECATED);
 chdir(__DIR__); // задаем директорию выполнение скрипта
 //echo $_SERVER['PHP_SELF'];
 
-$version = ' v.2.0.1';
+$version = ' v.2.0.2';
 /*
+2.0.0 any transport
 1.5.8 restart clients via cron
 1.5.2 work with SignalK
 1.5.1 work via gpsdPROXY simultaneously with saved data to file
@@ -240,8 +241,8 @@ infoBox.innerText='width: '+window.innerWidth+' height: '+window.innerHeight;
 <?php // ?>
 	'
 >
-	<form id='server' style='padding:0.1rem;border:1px solid black;border-radius:5px;' action='<?php echo $_SERVER['PHP_SELF'];?>'>
-		<table>
+	<form id='server' class='withBorder' style='width:100%;' action='<?php echo $_SERVER['PHP_SELF'];?>'>
+		<table style='width:100%;'>
 			<tr>
 				<td style='width:100%;'><?php 
 echo "$serverTXT $str";
@@ -255,16 +256,29 @@ if($serverOn){
 };
 									?>
 				</td>
-				<td style='width:4rem;'>
-					<button type=submit name="<?php echo $buttonName ?>" value='1' style='margin:0rem;padding:0;'>
+				<td style='width:4rem;text-align:center;font-size:150%;' onClick="
+					event.stopPropagation();	// как это вообще работает? Откуда тут переменная event?
+					console.log(event);
+					if(messageTXT.style.display == 'none'){
+						messageTXT.style.display = '';
+						document.body.addEventListener('click',(event)=>{
+							messageTXT.style.display = 'none';
+						},{'once':true});	// закрывать меню по клику в любом месте
+					}
+					else messageTXT.style.display = 'none';
+				">
+				?
+				</td>
+				<td style=''>
+					<button type=submit name="<?php echo $buttonName ?>" value='1' style='margin:0 0.5em;'>
 						<img <?php echo $buttonImg ?>  class='knob'>
 					</button>
 				</td>
 			</tr>
 		</table>
 	</form>
-	<div id='client' style='width:100%;height:53vh;margin:0.5rem 0 0.5rem 0;border:1px solid black;border-radius:5px;'>
-		<div style='height:65%;overflow:auto;padding:0.5rem;'>
+	<div id='client' class='withBorder' style='width:100%;height:53vh;'>
+		<div style='height:65%;overflow:auto;'>
 		<?php
 foreach($servers as $url => $server) {	// список подключенных групп
 	if(is_int($url)) continue; 	// строки - комментарии
@@ -281,11 +295,11 @@ foreach($servers as $url => $server) {	// список подключенных 
 				<table><tr>
 					<td>
 						<?php if($server[1]) { ?>
-						<button type='submit' name="stopClient" value='1' style='margin:0;padding:0;'>
+						<button type='submit' name="stopClient" value='1' style='margin:0 0.5em;'>
 							<img src="img/clientRun.svg" alt="STOP"  class='knob'>
 						</button>
 						<?php } else { ?>
-						<button type=submit name="startClient" value='1' style='margin:0;padding:0;'>
+						<button type=submit name="startClient" value='1' style='margin:0 0.5em;'>
 							<img src="img/off.svg" alt="START"  class='knob'>
 						</button>
 						<?php }; ?>
@@ -300,7 +314,7 @@ else echo htmlentities($server[3],ENT_QUOTES);
 						?></textarea>
 					</td>
 					<td>
-						<button type='button' name='editClient' value='1' style='margin:0;padding:0;'
+						<button type='button' name='editClient' value='1' style='margin:0 0.5em;'
 							onclick='
 								//console.log(this);
 								const form = this.closest("form");
@@ -343,7 +357,7 @@ else echo htmlentities($server[3],ENT_QUOTES);
 						<textarea name='serverDescription' placeholder='<?php echo $serverDescrPlaceholderTXT ?>' rows=2 style='width:99%;font-size:75%;padding:0.5rem;'></textarea>
 					</td>
 					<td>
-						<button type=submit name="addClient" value='1' style='margin:0;padding:0;'>
+						<button type=submit name="addClient" value='1' style='margin:0 0.5em;'>
 							<img src="img/add.svg" alt="EDIT" class='knob'>
 						</button>
 					</td>
@@ -351,7 +365,7 @@ else echo htmlentities($server[3],ENT_QUOTES);
 			</table>
 		</form>
 	</div>
-	<form  action='<?php echo $_SERVER['PHP_SELF'];?>' style='width:100%;margin:0.5rem 0 0.5rem 0;border:1px solid black;border-radius:5px;text-align:center;'>
+	<form  action='<?php echo $_SERVER['PHP_SELF'];?>' class='withBorder' style='width:100%;text-align:center;'>
 		<button type=submit name="criminalAlert" value='1' style='margin:1rem;padding:0;width:15%;'>
 			<img src="img/robbery.png" alt="Criminal alert!" class='knob'>
 		</button>
@@ -368,7 +382,7 @@ else echo htmlentities($server[3],ENT_QUOTES);
 			<img src="img/mob_marker.png" alt="The man is overboard!" class='knob'>
 		</button>
 	</form>
-	<div style='width:100%;border:1px solid black;border-radius:5px;'>
+	<div class='withBorder' style='width:100%;'>
 		<form  action='<?php echo $_SERVER['PHP_SELF'];?>' id='destination' style='margin:0.5rem 0 0.5rem 0;padding:0.5rem;width:47%;float:right';>
 			<input type='text' name='destinationCommonName' onchange="this.form.submit()" placeholder='<?php echo $vehicleDestinationPlaceholderTXT; ?>' size='17' style='font-size:120%;width:97%;margin:0.5rem' value='<?php echo $status['destination'];?>'><br>
 			<input type='datetime-local' name='destinationETA' onchange="this.form.submit()" placeholder='<?php echo $vehicleETAplaceholderTXT; ?>' size='17' style='font-size:120%;width:97%;margin:0.5rem' value='<?php echo $status['eta'];?>'>
@@ -392,9 +406,13 @@ else echo htmlentities($server[3],ENT_QUOTES);
 				<option value='15' <?php if($status['status'] == 15) echo "selected=1";?> ><?php echo $AISstatusTXT[15]; ?></option>
 			</select><br>
 			<textarea name='vehicleDescription' onchange="this.form.submit()" placeholder='<?php echo $vehicleDescrPlaceholderTXT; ?>' rows=3 style='width:98%;font-size:75%;margin:0.5rem 0;padding:0.5rem;'>
-<?php echo $status['description'];?></textarea>
+<?php echo $status['description'];?>
+			</textarea>
 		</form>
 	</div>
+</div>
+<div id="messageTXT" class='withBorder' style="display:none" onClick="event.stopPropagation();">
+<?php echo str_replace("\n",'<br>',$selfServerMemoTXT);?>
 </div>
 </body>
 </html>

@@ -32,7 +32,7 @@ Using the TOR as a transport ensures simplicity and security. However, the syste
 
 ## Demo
 Public group for testing:  
-**2q6q4phwaduy4mly2mrujxlhpjg7el7z2b4u6s7spghylcd6bv3eqvyd.onion**  
+**eqavt5cdur7vbzoejquiwviok4tfexy32sggxdxujm75uiljqi5g27ad.onion**  
 ~~All active group members are visible on [GaladrielMap](http://galadrielmap.hs-yachten.at/) [Live demo](http://130.61.159.53/map/)~~.  
 Unfortunately, the Oracle Inc. turned out to be a crook, so the demo does not work.
 
