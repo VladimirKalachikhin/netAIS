@@ -1,6 +1,6 @@
 html {
 	--out-width: 98vmin; /* * 1% of the viewport's smaller dimension */
-	--font-size: calc(var(--out-width)/30);	/* https://developer.mozilla.org/en-US/docs/Web/CSS/CSS_containment/Container_queries */
+	--font-size: calc(var(--out-width)/35);	/* https://developer.mozilla.org/en-US/docs/Web/CSS/CSS_containment/Container_queries */
 	/*--font-size: calc(11vmin);*/	/* https://developer.mozilla.org/en-US/docs/Web/CSS/CSS_containment/Container_queries */
 	--small-font-size: calc(var(--font-size)*0.75);	/* если сказать em, то величиной будет em, а не вычисленное в этот момент значение. Поэтому -- вычисляется */
 	--ltl-font-size: calc(var(--font-size)*0.5);

@@ -4,7 +4,7 @@ ini_set('error_reporting', E_ALL & ~E_NOTICE & ~E_STRICT & ~E_DEPRECATED);
 chdir(__DIR__); // задаем директорию выполнение скрипта
 //echo $_SERVER['PHP_SELF'];
 
-$version = ' v.2.0.2';
+$version = ' v.2.0.3';
 /*
 2.0.0 any transport
 1.5.8 restart clients via cron
@@ -258,7 +258,6 @@ if($serverOn){
 				</td>
 				<td style='width:4rem;text-align:center;font-size:150%;' onClick="
 					event.stopPropagation();	// как это вообще работает? Откуда тут переменная event?
-					console.log(event);
 					if(messageTXT.style.display == 'none'){
 						messageTXT.style.display = '';
 						document.body.addEventListener('click',(event)=>{
