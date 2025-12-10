@@ -15,6 +15,7 @@ ini_set('error_reporting', E_ALL & ~E_NOTICE & ~E_STRICT & ~E_DEPRECATED);
 
 chdir(__DIR__); // задаем директорию выполнение скрипта
 
+require('fIRun.php'); 	// 
 require_once('fcommon.php'); 	// 
 require_once('fGPSD.php'); // fGPSD.php, там есть переменные, которые должны быть глобальным, поэтому здесь
 require_once('params.php'); 	// 
@@ -42,7 +43,7 @@ if(!$netAISserverURI) {
 	return;
 }
 
-if(IRun($netAISserverURI)) { 	// Я ли?
+if(IRun()) { 	// Я ли?
 	echo "I'm already running, exiting.\n"; 
 	return;
 }
@@ -198,42 +199,6 @@ do {
 @unlink($netAISJSONfileName); 	// если netAIS выключен -- файл с целями должен быть удалён, иначе эти цели будут показываться вечно
 return;
 
-
-function IRun($netAISserverURI) {
-/**/
-global $phpCLIexec;
-$pid = getmypid();
-//echo "pid=$pid\n";
-//echo "ps -A w | grep '".pathinfo(__FILE__,PATHINFO_BASENAME)." \-s".str_replace(array('[',']'),array('\[','\]'),$netAISserverURI)."'\n";
-exec("ps -A w | grep '".pathinfo(__FILE__,PATHINFO_BASENAME)." \-s".str_replace(array('[',']'),array('\[','\]'),$netAISserverURI)."'",$psList);
-if(!$psList) exec("ps w | grep '".pathinfo(__FILE__,PATHINFO_BASENAME)." -s".str_replace(array('[',']'),array('\[','\]'),$netAISserverURI)."'",$psList); 	// for OpenWRT. For others -- let's hope so all run from one user
-//echo "[IRun] psList:"; print_r($psList); echo "\n";
-$run = FALSE;
-foreach($psList as $str) {
-	if(strpos($str,(string)$pid)!==FALSE) continue;
-	$str = explode(' ',trim($str)); 	// массив слов
-	foreach($str as $w) {
-		switch($w){
-		case 'watch':
-		case 'ps':
-		case 'grep':
-		case 'sh':
-		case 'bash': 	// если встретилось это слово -- это не та строка
-			break 2;
-//		case $phpCLIexec:	// авотхрен. В docker image  thecodingmachine/docker-images-php $phpCLIexec===php, но реально запускается /usr/bin/real_php
-//			$run=TRUE;
-//			break 3;
-		default:
-			if(strpos($w,'php')!==FALSE){
-				$run=TRUE;
-				break 3;
-			}
-		}
-	}
-};
-//echo "[IRun] run=$run\n";
-return $run;
-}
 
 
 function updSelf() {
