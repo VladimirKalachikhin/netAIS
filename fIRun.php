@@ -47,6 +47,7 @@ exec('ps ax | grep "'.$ownCmdline.'"',$psList);
 $found = false;
 foreach($psList as $str) {
 	if(strpos($str,(string)$ownPid)!==false) continue;
+	if(strpos($str,' sh')!==false) continue;
 	if(strpos($str,'ps ax')!==false) continue;
 	if(strpos($str,'grep')!==false) continue;
 	//echo "[IRun] str=$str;\n";
