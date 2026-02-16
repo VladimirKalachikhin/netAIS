@@ -4,7 +4,7 @@ ini_set('error_reporting', E_ALL & ~E_NOTICE & ~E_STRICT & ~E_DEPRECATED);
 chdir(__DIR__); // задаем директорию выполнение скрипта
 //echo $_SERVER['PHP_SELF'];
 
-$version = ' v.2.0.5';
+$version = ' v.2.0.6';
 /*
 2.0.0 any transport
 1.5.8 restart clients via cron

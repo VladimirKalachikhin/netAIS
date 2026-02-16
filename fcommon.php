@@ -76,11 +76,11 @@ if(!$connected) {
 
 	$msg = "?CONNECT;\n"; 	// ?CONNECT={"host":"","port":""};
 	//echo "Send CONNECT\n";
-	$res = socket_write($gpsdPROXYsock, $msg, strlen($msg)); 	// шлём команду подключиться к нам как к gpsd
+	$res = socket_write($gpsdPROXYsock, $msg, mb_strlen($msg,'8bit')); 	// шлём команду подключиться к нам как к gpsd
 	// handshaking as some gpsd
 	$msg = "$greeting\n"; 	// 
 	//echo "Send greeting\n";
-	$res = socket_write($gpsdPROXYsock, $msg, strlen($msg)); 	// шлём приветствие
+	$res = socket_write($gpsdPROXYsock, $msg, mb_strlen($msg,'8bit')); 	// шлём приветствие
 	$zeroCount = 0;	// счётчик пустых строк
 	do{		// 
 		$buf = socket_read($gpsdPROXYsock, 2048, PHP_NORMAL_READ); 	// PHP_NORMAL_READ -- ждать \n
@@ -108,12 +108,12 @@ if(!$connected) {
 			$msg = json_encode(array('class' => 'DEVICES', 'devices' => array($netAISdevice)),JSON_PRESERVE_ZERO_FRACTION | JSON_UNESCAPED_UNICODE);
 			$msg .= "\n";
 			//echo "Send DEVICES $msg \n";
-			$res = socket_write($gpsdPROXYsock, $msg, strlen($msg)); 	// шлём DEVICES
+			$res = socket_write($gpsdPROXYsock, $msg, mb_strlen($msg,'8bit')); 	// шлём DEVICES
 
 			$msg = '{"class":"WATCH","enable":true,"json":true,"nmea":false,"raw":0,"scaled":true,"split24":true,"timing":false,"pps":false,"device":"'.$netAISdevice['path'].'","remote":"'.$netAISdevice['path'].'.php"}';
 			$msg .= "\n";
 			//echo "Send WATCH\n";
-			$res = socket_write($gpsdPROXYsock, $msg, strlen($msg)); 	// шлём WATCH
+			$res = socket_write($gpsdPROXYsock, $msg, mb_strlen($msg,'8bit')); 	// шлём WATCH
 			break;
 		}
 		$connected = TRUE;
@@ -126,7 +126,7 @@ if($connected) {
 	//echo "[uploadTogpsdPROXY] aisData before send to gpsdPROXY: >"; print_r($aisData);
 	$msg = json_encode(array('class'=>'netAIS','device'=>$netAISdevice['path'],'data'=>$aisData),JSON_PRESERVE_ZERO_FRACTION | JSON_UNESCAPED_UNICODE);
 	$msg .= "\n";
-	$res = @socket_write($gpsdPROXYsock, $msg, strlen($msg)); 	// шлём данные
+	$res = @socket_write($gpsdPROXYsock, $msg, mb_strlen($msg,'8bit')); 	// шлём данные
 	if($res === FALSE) { 	// клиент умер
 		socket_close($gpsdPROXYsock);	// 
 		$connected = FALSE;
